@@ -148,17 +148,63 @@ if not st.session_state.programok:
         {"id": 1, "nev": "Nyitó áhítat (Szerverhiba esetén)", "idopont": "2026-07-08 17:00", "tartam_perc": 60, "helyszin": "Zajforrás", "cimkek": ["lelki alkalom"], "leiras": "Nem sikerült lekölteni az adatokat a szerverről."}
     ]
 
-# Default family members list
+import json
+import os
+
+SELECTIONS_FILE = "csalad_selections.json"
+
+def load_selections():
+    if not os.path.exists(SELECTIONS_FILE):
+        return {
+            "csaladtagok": ["Anya", "Apa", "Gyerkőc 1", "Gyerkőc 2"],
+            "valasztott": {"Anya": [], "Apa": [], "Gyerkőc 1": [], "Gyerkőc 2": []},
+            "custom_durations": {}
+        }
+    try:
+        with open(SELECTIONS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            if "csaladtagok" not in data:
+                data["csaladtagok"] = ["Anya", "Apa", "Gyerkőc 1", "Gyerkőc 2"]
+            if "valasztott" not in data:
+                data["valasztott"] = {tag: [] for tag in data["csaladtagok"]}
+            if "custom_durations" not in data:
+                data["custom_durations"] = {}
+            return data
+    except Exception:
+        return {
+            "csaladtagok": ["Anya", "Apa", "Gyerkőc 1", "Gyerkőc 2"],
+            "valasztott": {"Anya": [], "Apa": [], "Gyerkőc 1": [], "Gyerkőc 2": []},
+            "custom_durations": {}
+        }
+
+def save_selections():
+    try:
+        data = {
+            "csaladtagok": st.session_state.csaladtagok,
+            "valasztott": st.session_state.valasztott,
+            "custom_durations": st.session_state.custom_durations
+        }
+        with open(SELECTIONS_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
+    except Exception as e:
+        st.error(f"Hiba a mentéskor: {e}")
+
+# Load saved selections
+saved_data = load_selections()
+
 if 'csaladtagok' not in st.session_state:
-    st.session_state.csaladtagok = ["Anya", "Apa", "Gyerkőc 1", "Gyerkőc 2"]
+    st.session_state.csaladtagok = saved_data["csaladtagok"]
 
-# Selected program IDs
 if 'valasztott' not in st.session_state:
-    st.session_state.valasztott = {tag: [] for tag in st.session_state.csaladtagok}
+    st.session_state.valasztott = saved_data["valasztott"]
 
-# Custom durations overrides
+# Ensure all current members exist in valasztott
+for tag in st.session_state.csaladtagok:
+    if tag not in st.session_state.valasztott:
+        st.session_state.valasztott[tag] = []
+
 if 'custom_durations' not in st.session_state:
-    st.session_state.custom_durations = {}
+    st.session_state.custom_durations = saved_data["custom_durations"]
 
 # --- 5. HELPER FUNCTIONS ---
 
@@ -369,6 +415,7 @@ with st.sidebar:
                 st.session_state.csaladtagok.remove(tag)
                 if tag in st.session_state.valasztott:
                     del st.session_state.valasztott[tag]
+                save_selections()
                 st.rerun()
                 
     # Add new family member
@@ -378,6 +425,7 @@ with st.sidebar:
         if uj_tag and uj_tag not in st.session_state.csaladtagok:
             st.session_state.csaladtagok.append(uj_tag)
             st.session_state.valasztott[uj_tag] = []
+            save_selections()
             st.rerun()
             
     # Mobile Help Section
@@ -403,9 +451,13 @@ with st.sidebar:
     # Scraping utility actions
     st.write("---")
     st.caption(f"Összes szinkronizált program: {len(st.session_state.programok)}")
-    if st.button("🔄 Adatok újratöltése", help="Programok frissítése az élő honlapról"):
+    if st.button("🔄 Adatok újratöltése", help="Programok frissítése az élő honlapról és mentett tervek szinkronizálása"):
         st.session_state.clear_cache = True
         st.session_state.programok = get_scraped_programs()
+        s_data = load_selections()
+        st.session_state.csaladtagok = s_data["csaladtagok"]
+        st.session_state.valasztott = s_data["valasztott"]
+        st.session_state.custom_durations = s_data["custom_durations"]
         st.rerun()
 
 # --- 8. TABS DEFINITION ---
@@ -558,11 +610,13 @@ with tab_kereso:
                 
                 if checked and p_id not in st.session_state.valasztott[kivalasztott_tag]:
                     st.session_state.valasztott[kivalasztott_tag].append(p_id)
+                    save_selections()
                     st.rerun()
                 elif not checked and p_id in st.session_state.valasztott[kivalasztott_tag]:
                     st.session_state.valasztott[kivalasztott_tag].remove(p_id)
                     if f"{kivalasztott_tag}_{p_id}" in st.session_state.custom_durations:
                         del st.session_state.custom_durations[f"{kivalasztott_tag}_{p_id}"]
+                    save_selections()
                     st.rerun()
                 
                 if checked:
@@ -578,6 +632,7 @@ with tab_kereso:
                     )
                     if custom_dur != duration:
                         st.session_state.custom_durations[f"{kivalasztott_tag}_{p_id}"] = custom_dur
+                        save_selections()
                         st.rerun()
 
 # --- TAB 2: PERSONAL CALENDARS ---
@@ -664,6 +719,7 @@ with tab_naptar:
                         st.session_state.valasztott[naptar_tag].remove(p_id)
                         if f"{naptar_tag}_{p_id}" in st.session_state.custom_durations:
                             del st.session_state.custom_durations[f"{naptar_tag}_{p_id}"]
+                        save_selections()
                         st.rerun()
 
 # --- TAB 3: FAMILY TIMELINE OVERVIEW ---
