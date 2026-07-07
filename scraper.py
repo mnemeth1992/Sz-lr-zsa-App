@@ -100,6 +100,17 @@ def scrape_programs():
                 elif 'áhítat' in lower_title or 'ima' in lower_title or lower_title.startswith('reggeli'):
                     duration = 45
         
+        # 8. Image
+        img_el = p.find('img')
+        kep_url = ""
+        if img_el:
+            src = img_el.get('src', '')
+            if src:
+                if src.startswith('/'):
+                    kep_url = f"https://www.szelrozsatalalkozo.hu{src}"
+                else:
+                    kep_url = src
+
         parsed_programs.append({
             "id": p_id,
             "nev": title,
@@ -108,7 +119,8 @@ def scrape_programs():
             "helyszin": location,
             "leiras": description,
             "cimkek": tags,
-            "urlpath": p.get('data-urlpath', '')
+            "urlpath": p.get('data-urlpath', ''),
+            "kep": kep_url
         })
         
     return parsed_programs

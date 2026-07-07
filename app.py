@@ -598,6 +598,10 @@ with tab_kereso:
                                     full_desc = p["leiras"]
                                 st.session_state[full_desc_key] = full_desc
                         
+                        # Show image if available and not a placeholder
+                        kep = p.get("kep", "")
+                        if kep and "placeholder_fest" not in kep:
+                            st.image(kep, use_container_width=True)
                         st.write(st.session_state[full_desc_key])
                 
                 # Show conflict warning in red box
@@ -709,6 +713,11 @@ with tab_naptar:
                                     if not full_desc or "Hiba" in full_desc or "Nem sikerült" in full_desc:
                                         full_desc = p["leiras"]
                                     st.session_state[full_desc_key] = full_desc
+                            
+                            # Show image if available and not a placeholder
+                            kep = p.get("kep", "")
+                            if kep and "placeholder_fest" not in kep:
+                                st.image(kep, use_container_width=True)
                             st.write(st.session_state[full_desc_key])
                     
                     if van_utkozes:
@@ -789,7 +798,15 @@ with tab_csalad:
                 else:
                     with st.container():
                         col_card_info, col_card_members = st.columns([3, 1])
-           # --- TAB 4: FESTIVAL MAP ---
+                        with col_card_info:
+                            st.markdown(f'<div class="program-title">{p["nev"]}</div>', unsafe_allow_html=True)
+                            st.caption(f"📍 {loc_display} | 🏷️ {', '.join(p.get('cimkek', []))}")
+                        with col_card_members:
+                            st.markdown("**Résztvevők:**")
+                            for m in members:
+                                st.markdown(f"- 👤 {m}")
+
+# --- TAB 4: FESTIVAL MAP ---
 with tab_terkep:
     st.subheader("🗺️ Fesztivál Térkép & Helyszín Kódok")
     st.write("A 2026-os soproni Szélrózsa találkozó hivatalos helyszínrajza:")
@@ -815,9 +832,13 @@ with tab_terkep:
     with st.expander("Saját térkép kép feltöltése/cseréje"):
         uploaded_file = st.file_uploader("Válassz egy képernyőképet (PNG, JPG, JPEG):", type=["png", "jpg", "jpeg"])
         if uploaded_file is not None:
-            if save_uploaded_file(uploaded_file):
-                st.success("Térkép sikeresen feltöltve és mentve! Az app frissülni fog.")
-                st.rerun()
+            # Avoid infinite rerun loop
+            file_key = f"uploaded_{uploaded_file.name}_{uploaded_file.size}"
+            if file_key not in st.session_state:
+                if save_uploaded_file(uploaded_file):
+                    st.session_state[file_key] = True
+                    st.success("Térkép sikeresen feltöltve és mentve! Az app frissülni fog.")
+                    st.rerun()
 
     # Table of location numbers
     st.write("---")
