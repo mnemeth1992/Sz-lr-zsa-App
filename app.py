@@ -133,28 +133,42 @@ import os
 import json
 ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 PROGRAMS_FILE = os.path.join(ROOT_PATH, "programs_database.json")
+GITHUB_RAW_URL = "https://raw.githubusercontent.com/mnemeth1992/Sz-lr-zsa-App/main/programs_database.json"
 
 @st.cache_resource
 def _load_programs_once():
-    """Loads programs exactly once per server lifetime. Never re-runs unless server restarts."""
+    """Loads programs exactly once per server lifetime."""
+    import requests
+
+    # 1. Try local file first (fastest)
     if os.path.exists(PROGRAMS_FILE):
         try:
-            print(f"[CACHE] JSON betöltése: {PROGRAMS_FILE}")
+            print(f"[CACHE] Helyi JSON betöltése: {PROGRAMS_FILE}")
             with open(PROGRAMS_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            print(f"[CACHE] {len(data)} program betöltve JSON-ből (gyors).")
-            return data
+            if data:
+                print(f"[CACHE] {len(data)} program betöltve helyileg.")
+                return data
         except Exception as e:
-            print(f"[CACHE] JSON olvasási hiba: {e}")
+            print(f"[CACHE] Helyi JSON hiba: {e}")
 
-    print(f"[CACHE] JSON nem található, scraper futtatása...")
+    # 2. Download from GitHub raw URL (works on Streamlit Cloud regardless of path)
+    try:
+        print(f"[CACHE] GitHub-ról töltés: {GITHUB_RAW_URL}")
+        r = requests.get(GITHUB_RAW_URL, timeout=15)
+        if r.status_code == 200:
+            data = r.json()
+            print(f"[CACHE] {len(data)} program letöltve GitHub-ról.")
+            return data
+        else:
+            print(f"[CACHE] GitHub hiba: {r.status_code}")
+    except Exception as e:
+        print(f"[CACHE] GitHub letöltési hiba: {e}")
+
+    # 3. Last resort: run the scraper
+    print(f"[CACHE] Scraper futtatása végső esetként...")
     programs = scraper.scrape_programs()
     print(f"[CACHE] Scraper lefutott: {len(programs)} program.")
-    try:
-        with open(PROGRAMS_FILE, "w", encoding="utf-8") as f:
-            json.dump(programs, f, ensure_ascii=False, indent=4)
-    except Exception as e:
-        print(f"[CACHE] JSON mentési hiba: {e}")
     return programs
 
 def get_scraped_programs():
@@ -164,6 +178,7 @@ def get_scraped_programs():
 if 'clear_cache' in st.session_state and st.session_state.clear_cache:
     st.cache_resource.clear()
     st.session_state.clear_cache = False
+
 
 # --- 4. SESSION STATE INITIALIZATION ---
 if 'programok' not in st.session_state:
