@@ -151,7 +151,9 @@ if not st.session_state.programok:
 import json
 import os
 
-SELECTIONS_FILE = "csalad_selections.json"
+# Absolute path resolution
+ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
+SELECTIONS_FILE = os.path.join(ROOT_PATH, "csalad_selections.json")
 
 def load_selections():
     if not os.path.exists(SELECTIONS_FILE):
@@ -288,7 +290,8 @@ def get_location_number(loc_name):
 def save_uploaded_file(uploaded_file):
     try:
         import os
-        with open("uploaded_map.png", "wb") as f:
+        target_path = os.path.join(ROOT_PATH, "uploaded_map.png")
+        with open(target_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
         return True
     except Exception as e:
@@ -452,12 +455,17 @@ with st.sidebar:
     st.write("---")
     st.caption(f"Összes szinkronizált program: {len(st.session_state.programok)}")
     if st.button("🔄 Adatok újratöltése", help="Programok frissítése az élő honlapról és mentett tervek szinkronizálása"):
-        st.session_state.clear_cache = True
-        st.session_state.programok = get_scraped_programs()
-        s_data = load_selections()
-        st.session_state.csaladtagok = s_data["csaladtagok"]
-        st.session_state.valasztott = s_data["valasztott"]
-        st.session_state.custom_durations = s_data["custom_durations"]
+        # Clear Streamlit cache immediately
+        st.cache_data.clear()
+        # Force delete state variables so they are loaded completely fresh from the scraper and JSON database
+        if 'programok' in st.session_state:
+            del st.session_state.programok
+        if 'csaladtagok' in st.session_state:
+            del st.session_state.csaladtagok
+        if 'valasztott' in st.session_state:
+            del st.session_state.valasztott
+        if 'custom_durations' in st.session_state:
+            del st.session_state.custom_durations
         st.rerun()
 
 # --- 8. TABS DEFINITION ---
@@ -811,20 +819,25 @@ with tab_terkep:
     st.subheader("🗺️ Fesztivál Térkép & Helyszín Kódok")
     st.write("A 2026-os soproni Szélrózsa találkozó hivatalos helyszínrajza:")
     
-    # Display map parts
+    # Display map parts using absolute paths
     import os
-    if os.path.exists("map_part1.jpg") and os.path.exists("map_part2.jpg") and os.path.exists("map_part3.jpg"):
+    p1_path = os.path.join(ROOT_PATH, "map_part1.jpg")
+    p2_path = os.path.join(ROOT_PATH, "map_part2.jpg")
+    p3_path = os.path.join(ROOT_PATH, "map_part3.jpg")
+    uploaded_path = os.path.join(ROOT_PATH, "uploaded_map.png")
+    
+    if os.path.exists(p1_path) and os.path.exists(p2_path) and os.path.exists(p3_path):
         st.write("A térkép 3 része (görgess le a teljes megtekintéshez):")
         
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.image("map_part1.jpg", caption="1. rész: Helyszínlista és P épület", use_container_width=True)
+            st.image(p1_path, caption="1. rész: Helyszínlista és P épület", use_container_width=True)
         with col2:
-            st.image("map_part2.jpg", caption="2. rész: Erzsébet-kert (Középső terület)", use_container_width=True)
+            st.image(p2_path, caption="2. rész: Erzsébet-kert (Középső terület)", use_container_width=True)
         with col3:
-            st.image("map_part3.jpg", caption="3. rész: GYIK & Bánfalvi út", use_container_width=True)
-    elif os.path.exists("uploaded_map.png"):
-        st.image("uploaded_map.png", caption="Feltöltött Szélrósa Helyszínrajz", use_container_width=True)
+            st.image(p3_path, caption="3. rész: GYIK & Bánfalvi út", use_container_width=True)
+    elif os.path.exists(uploaded_path):
+        st.image(uploaded_path, caption="Feltöltött Szélrósa Helyszínrajz", use_container_width=True)
     else:
         st.info("Még nincs térkép kép elhelyezve a projektben.")
         
