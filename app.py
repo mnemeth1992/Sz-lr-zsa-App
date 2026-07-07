@@ -133,23 +133,30 @@ import os
 ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 PROGRAMS_FILE = os.path.join(ROOT_PATH, "programs_database.json")
 
-@st.cache_data(show_spinner="Programadatbázis betöltése...")
+@st.cache_data
 def get_scraped_programs():
     import json
     if os.path.exists(PROGRAMS_FILE):
         try:
+            print(f"[CACHE] JSON fájl megtalálva: {PROGRAMS_FILE} - gyors betöltés")
             with open(PROGRAMS_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
+                data = json.load(f)
+            print(f"[CACHE] {len(data)} program betöltve JSON-ből.")
+            return data
+        except Exception as e:
+            print(f"[CACHE] JSON olvasási hiba: {e}")
             pass
             
     # If file doesn't exist, run the scraper and save results locally
+    print(f"[CACHE] JSON nem található, scraper futtatása...")
     programs = scraper.scrape_programs()
+    print(f"[CACHE] Scraper lefutott: {len(programs)} program.")
     try:
         with open(PROGRAMS_FILE, "w", encoding="utf-8") as f:
             json.dump(programs, f, ensure_ascii=False, indent=4)
-    except Exception:
-        pass
+        print(f"[CACHE] JSON elmentve: {PROGRAMS_FILE}")
+    except Exception as e:
+        print(f"[CACHE] JSON mentési hiba: {e}")
     return programs
 
 # Force clear cache action helper
