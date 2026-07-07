@@ -650,18 +650,21 @@ with tab_kereso:
                 if p["leiras"]:
                     with st.expander("Részletes leírás megtekintése"):
                         full_desc_key = f"full_desc_{p_id}"
-                        if full_desc_key not in st.session_state:
-                            with st.spinner("Részletes leírás betöltése..."):
-                                full_desc = scraper.scrape_full_description(p.get("urlpath", ""))
-                                if not full_desc or "Hiba" in full_desc or "Nem sikerült" in full_desc:
-                                    full_desc = p["leiras"]
-                                st.session_state[full_desc_key] = full_desc
-                        
-                        # Show image if available and not a placeholder
+                        # Show image if available
                         kep = p.get("kep", "")
                         if kep and "placeholder_fest" not in kep:
                             st.image(kep, use_container_width=True)
-                        st.write(st.session_state[full_desc_key])
+                        # Show existing description
+                        st.write(st.session_state.get(full_desc_key, p["leiras"]))
+                        # Offer full description fetch only on demand
+                        if full_desc_key not in st.session_state:
+                            if st.button("📖 Teljes leírás betöltése", key=f"desc_btn_{p_id}_{kivalasztott_tag}"):
+                                with st.spinner("Betöltés..."):
+                                    full_desc = scraper.scrape_full_description(p.get("urlpath", ""))
+                                    if not full_desc or "Hiba" in full_desc or "Nem sikerült" in full_desc:
+                                        full_desc = p["leiras"]
+                                    st.session_state[full_desc_key] = full_desc
+                                    st.rerun()
                 
                 # Show conflict warning in red box
                 if van_utkozes:
@@ -774,18 +777,21 @@ with tab_naptar:
                     if p["leiras"]:
                         with st.expander("Részletes leírás megtekintése"):
                             full_desc_key = f"full_desc_{p_id}"
-                            if full_desc_key not in st.session_state:
-                                with st.spinner("Részletes leírás betöltése..."):
-                                    full_desc = scraper.scrape_full_description(p.get("urlpath", ""))
-                                    if not full_desc or "Hiba" in full_desc or "Nem sikerült" in full_desc:
-                                        full_desc = p["leiras"]
-                                    st.session_state[full_desc_key] = full_desc
-                            
-                            # Show image if available and not a placeholder
+                            # Show image if available
                             kep = p.get("kep", "")
                             if kep and "placeholder_fest" not in kep:
                                 st.image(kep, use_container_width=True)
-                            st.write(st.session_state[full_desc_key])
+                            # Show existing description
+                            st.write(st.session_state.get(full_desc_key, p["leiras"]))
+                            # Offer full description fetch only on demand
+                            if full_desc_key not in st.session_state:
+                                if st.button("📖 Teljes leírás betöltése", key=f"desc_btn_{p_id}_{naptar_tag}_cal"):
+                                    with st.spinner("Betöltés..."):
+                                        full_desc = scraper.scrape_full_description(p.get("urlpath", ""))
+                                        if not full_desc or "Hiba" in full_desc or "Nem sikerült" in full_desc:
+                                            full_desc = p["leiras"]
+                                        st.session_state[full_desc_key] = full_desc
+                                        st.rerun()
                     
                     if van_utkozes:
                         st.error(f"⚠️ **Ütközés a következő naptárbejegyzésekkel:**  \n" + "  \n".join([f"- {u}" for u in utkozesek[p_id]]))
