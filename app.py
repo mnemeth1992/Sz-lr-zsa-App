@@ -388,7 +388,7 @@ def ellenoriz_utkozeseket_reszletes(tag):
             continue
         try:
             kezdete = datetime.strptime(p["idopont"], "%Y-%m-%d %H:%M")
-            duration = st.session_state.custom_durations.get(f"{tag}_{p_id}", p["tartam_perc"])
+            duration = st.session_state.custom_durations.get(f"{tag}_{p_id}", p["tartam_perc"] or 60)
             vege = kezdete + pd.Timedelta(minutes=duration)
             intervals.append({
                 "id": p_id,
@@ -434,7 +434,7 @@ def generate_ics_data(tag):
         if p and p["idopont"]:
             try:
                 kezdete = datetime.strptime(p["idopont"], "%Y-%m-%d %H:%M")
-                duration = st.session_state.custom_durations.get(f"{tag}_{p_id}", p["tartam_perc"])
+                duration = st.session_state.custom_durations.get(f"{tag}_{p_id}", p["tartam_perc"] or 60)
                 vege = kezdete + pd.Timedelta(minutes=duration)
                 
                 start_str = kezdete.strftime("%Y%m%dT%H%M%S")
@@ -625,7 +625,7 @@ with tab_kereso:
         p_id = p["id"]
         be_van_jelolve = p_id in st.session_state.valasztott.get(kivalasztott_tag, [])
         van_utkozes = be_van_jelolve and p_id in utkozesek
-        duration = st.session_state.custom_durations.get(f"{kivalasztott_tag}_{p_id}", p["tartam_perc"])
+        duration = st.session_state.custom_durations.get(f"{kivalasztott_tag}_{p_id}", p["tartam_perc"] or 60)
         
         with st.container():
             col_info, col_chk = st.columns([4, 1])
@@ -696,11 +696,12 @@ with tab_kereso:
                 if checked:
                     # Slider to customize duration
                     dur_key = f"slider_{kivalasztott_tag}_{p_id}"
+                    safe_duration = int(duration) if duration is not None else 60
                     custom_dur = st.number_input(
                         "Hossz (perc):", 
                         min_value=15, 
                         max_value=360, 
-                        value=int(duration),
+                        value=safe_duration,
                         step=15,
                         key=dur_key
                     )
@@ -749,7 +750,7 @@ with tab_naptar:
         for p in naptar_progs:
             p_id = p["id"]
             van_utkozes = p_id in utkozesek
-            duration = st.session_state.custom_durations.get(f"{naptar_tag}_{p_id}", p["tartam_perc"])
+            duration = st.session_state.custom_durations.get(f"{naptar_tag}_{p_id}", p["tartam_perc"] or 60)
             
             try:
                 kezdete = datetime.strptime(p["idopont"], "%Y-%m-%d %H:%M")
@@ -943,7 +944,7 @@ with tab_elo:
             try:
                 p_start = datetime.datetime.strptime(p["idopont"], "%Y-%m-%d %H:%M")
                 # Get customized or default duration
-                duration = st.session_state.custom_durations.get(f"Anya_{p['id']}", p["tartam_perc"])
+                duration = st.session_state.custom_durations.get(f"Anya_{p['id']}", p["tartam_perc"] or 60)
                 p_end = p_start + datetime.timedelta(minutes=duration)
                 
                 if p_start <= current_dt <= p_end:
