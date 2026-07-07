@@ -133,50 +133,33 @@ import os
 import json
 ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 PROGRAMS_FILE = os.path.join(ROOT_PATH, "programs_database.json")
-GITHUB_RAW_URL = "https://raw.githubusercontent.com/mnemeth1992/Sz-lr-zsa-App/main/programs_database.json"
 
-@st.cache_resource
-def _load_programs_once():
-    """Loads programs exactly once per server lifetime."""
-    import requests
+# Import pre-built program data directly from Python module (fastest, always works)
+try:
+    from programs_data import PROGRAMS as _BUILTIN_PROGRAMS
+except ImportError:
+    _BUILTIN_PROGRAMS = None
 
-    # 1. Try local file first (fastest)
+def get_scraped_programs():
+    # 1. Use built-in Python module (instant, no I/O, no network)
+    if _BUILTIN_PROGRAMS:
+        return _BUILTIN_PROGRAMS
+
+    # 2. Try local JSON file
     if os.path.exists(PROGRAMS_FILE):
         try:
-            print(f"[CACHE] Helyi JSON betöltése: {PROGRAMS_FILE}")
             with open(PROGRAMS_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
             if data:
-                print(f"[CACHE] {len(data)} program betöltve helyileg.")
                 return data
-        except Exception as e:
-            print(f"[CACHE] Helyi JSON hiba: {e}")
+        except Exception:
+            pass
 
-    # 2. Download from GitHub raw URL (works on Streamlit Cloud regardless of path)
-    try:
-        print(f"[CACHE] GitHub-ról töltés: {GITHUB_RAW_URL}")
-        r = requests.get(GITHUB_RAW_URL, timeout=15)
-        if r.status_code == 200:
-            data = r.json()
-            print(f"[CACHE] {len(data)} program letöltve GitHub-ról.")
-            return data
-        else:
-            print(f"[CACHE] GitHub hiba: {r.status_code}")
-    except Exception as e:
-        print(f"[CACHE] GitHub letöltési hiba: {e}")
+    # 3. Last resort: scraper
+    return scraper.scrape_programs()
 
-    # 3. Last resort: run the scraper
-    print(f"[CACHE] Scraper futtatása végső esetként...")
-    programs = scraper.scrape_programs()
-    print(f"[CACHE] Scraper lefutott: {len(programs)} program.")
-    return programs
-
-def get_scraped_programs():
-    return _load_programs_once()
-
-# Force clear cache action helper
+# Force clear cache action helper (kept for compatibility)
 if 'clear_cache' in st.session_state and st.session_state.clear_cache:
-    st.cache_resource.clear()
     st.session_state.clear_cache = False
 
 
