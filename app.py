@@ -26,7 +26,7 @@ st.markdown("""
     h1, h2, h3, h4, h5, h6 {
         font-family: 'Barlow', sans-serif !important;
         font-weight: 700 !important;
-        color: #0d5c94 !important; /* Deep Blue for visibility */
+        color: #0d5c94 !important;
     }
 
     /* Branded Header Banner */
@@ -67,7 +67,7 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(14, 118, 188, 0.12) !important;
     }
     
-    /* Clean text color overrides for readability inside Streamlit */
+    /* Program title */
     .program-title {
         color: #0f172a !important;
         font-family: 'Barlow', sans-serif !important;
@@ -76,10 +76,8 @@ st.markdown("""
         margin-bottom: 8px !important;
     }
     
-    /* High contrast custom metadata badges */
-    .badge-container {
-        margin: 8px 0;
-    }
+    /* Metadata badges */
+    .badge-container { margin: 8px 0; }
     .badge {
         display: inline-block;
         padding: 4px 12px;
@@ -115,15 +113,225 @@ st.markdown("""
         margin-bottom: 12px;
         box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.1);
     }
-    .family-together-card strong {
-        color: #065f46 !important;
-        font-size: 1.15rem;
+    .family-together-card strong { color: #065f46 !important; font-size: 1.15rem; }
+    .family-together-card em { color: #047857 !important; }
+    .family-together-card span { color: #065f46 !important; }
+
+    /* ===== ÉLŐ PROGRAMKÖVETŐ KÁRTYÁK ===== */
+    @keyframes pulse-live {
+        0%   { box-shadow: 0 0 0 0 rgba(16,185,129,0.55); }
+        70%  { box-shadow: 0 0 0 10px rgba(16,185,129,0); }
+        100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
     }
-    .family-together-card em {
-        color: #047857 !important;
+    @keyframes shimmer {
+        0%   { background-position: -400px 0; }
+        100% { background-position: 400px 0; }
     }
-    .family-together-card span {
-        color: #065f46 !important;
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(18px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .live-header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 18px;
+        padding: 16px 20px;
+        background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+        border-radius: 14px;
+        box-shadow: 0 4px 24px rgba(14,118,188,0.18);
+    }
+    .live-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #10b981;
+        animation: pulse-live 1.6s ease-in-out infinite;
+        flex-shrink: 0;
+    }
+    .live-title {
+        font-family: 'Barlow', sans-serif !important;
+        font-weight: 800;
+        font-size: 1.4rem;
+        color: #ffffff;
+        letter-spacing: 0.01em;
+    }
+    .live-time-badge {
+        margin-left: auto;
+        background: rgba(16,185,129,0.18);
+        border: 1px solid #10b981;
+        color: #6ee7b7;
+        font-size: 0.82rem;
+        font-weight: 700;
+        padding: 4px 12px;
+        border-radius: 20px;
+        letter-spacing: 0.04em;
+    }
+
+    .live-card {
+        background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+        border: 2px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 18px 20px 14px 20px;
+        margin-bottom: 16px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+        animation: fadeInUp 0.45s ease both;
+        transition: box-shadow 0.2s, border-color 0.2s;
+        position: relative;
+        overflow: hidden;
+    }
+    .live-card:hover {
+        box-shadow: 0 8px 28px rgba(14,118,188,0.14);
+        border-color: #93c5fd;
+    }
+    .live-card.selected {
+        border-color: #10b981;
+        background: linear-gradient(145deg, #f0fdf4 0%, #ecfdf5 100%);
+        box-shadow: 0 4px 20px rgba(16,185,129,0.13);
+    }
+    .live-card-accent {
+        position: absolute;
+        top: 0; left: 0;
+        width: 5px; height: 100%;
+        border-radius: 16px 0 0 16px;
+        background: linear-gradient(180deg, #0e76bc, #10b981);
+    }
+    .live-card.selected .live-card-accent {
+        background: linear-gradient(180deg, #10b981, #059669);
+    }
+    .live-card-title {
+        font-family: 'Barlow', sans-serif;
+        font-weight: 800;
+        font-size: 1.05rem;
+        color: #0f172a;
+        margin: 0 0 6px 0;
+        line-height: 1.3;
+    }
+    .live-card-meta {
+        font-size: 0.8rem;
+        color: #475569;
+        margin-bottom: 10px;
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .live-card-meta span { display: flex; align-items: center; gap: 3px; }
+    .live-progress-wrap {
+        background: #e2e8f0;
+        border-radius: 99px;
+        height: 10px;
+        overflow: hidden;
+        margin: 8px 0 6px 0;
+    }
+    .live-progress-bar {
+        height: 100%;
+        border-radius: 99px;
+        background: linear-gradient(90deg, #0e76bc, #10b981);
+        transition: width 1s ease;
+        position: relative;
+    }
+    .live-progress-bar::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.35) 50%, transparent 100%);
+        background-size: 400px 100%;
+        animation: shimmer 2.2s infinite linear;
+    }
+    .live-progress-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.72rem;
+        color: #64748b;
+        margin-top: 2px;
+    }
+    .live-members {
+        margin-top: 10px;
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+    .live-member-chip {
+        background: linear-gradient(135deg, #dbeafe, #e0f2fe);
+        color: #1e40af;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 99px;
+        border: 1px solid #bfdbfe;
+    }
+    .live-member-chip.selected-chip {
+        background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+        color: #065f46;
+        border-color: #6ee7b7;
+    }
+
+    .upcoming-header {
+        font-family: 'Barlow', sans-serif;
+        font-weight: 800;
+        font-size: 1.2rem;
+        color: #1e293b;
+        margin: 28px 0 14px 0;
+        padding-bottom: 8px;
+        border-bottom: 2px dashed #cbd5e1;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .upcoming-card {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        background: #ffffff;
+        border-radius: 12px;
+        margin-bottom: 8px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        animation: fadeInUp 0.4s ease both;
+        transition: box-shadow 0.2s;
+    }
+    .upcoming-card:hover { box-shadow: 0 4px 14px rgba(14,118,188,0.1); }
+    .upcoming-card.selected { border-color: #10b981; background: #f0fdf4; }
+    .upcoming-name {
+        font-family: 'Barlow', sans-serif;
+        font-weight: 700;
+        color: #0f172a;
+        font-size: 0.92rem;
+    }
+    .upcoming-sub { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+    .upcoming-timer {
+        text-align: right;
+        flex-shrink: 0;
+        margin-left: 12px;
+    }
+    .upcoming-min {
+        font-family: 'Barlow', sans-serif;
+        font-weight: 800;
+        font-size: 1.25rem;
+        color: #0e76bc;
+        line-height: 1;
+    }
+    .upcoming-min-label { font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; }
+    .upcoming-hm { font-size: 0.78rem; color: #475569; font-weight: 600; margin-top: 2px; }
+
+    /* No-program state */
+    .no-live-msg {
+        text-align: center;
+        padding: 48px 24px;
+        color: #94a3b8;
+    }
+    .no-live-msg .emoji { font-size: 3.5rem; margin-bottom: 12px; }
+    .no-live-msg h3 { color: #64748b !important; font-size: 1.3rem !important; margin-bottom: 6px !important; }
+    .no-live-msg p { font-size: 0.9rem; }
+
+    /* ===== PROGRAM KERESŐ KIVÁLASZTÓ GOMB ===== */
+    .select-btn-row {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: stretch;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -619,8 +827,9 @@ with tab_kereso:
         with st.container():
             col_info, col_chk = st.columns([4, 1])
             with col_info:
-                # Title
-                st.markdown(f'<div class="program-title">{p["nev"]}</div>', unsafe_allow_html=True)
+                # Title with selected highlight
+                title_style = "color:#065f46; font-weight:800;" if be_van_jelolve else ""
+                st.markdown(f'<div class="program-title" style="{title_style}">{"✅ " if be_van_jelolve else ""}{p["nev"]}</div>', unsafe_allow_html=True)
                 
                 # Badges row
                 day_name = map_day_name(p["idopont"])
@@ -650,13 +859,10 @@ with tab_kereso:
                 if p["leiras"]:
                     with st.expander("Részletes leírás megtekintése"):
                         full_desc_key = f"full_desc_{p_id}"
-                        # Show image if available
                         kep = p.get("kep", "")
                         if kep and "placeholder_fest" not in kep:
                             st.image(kep, use_container_width=True)
-                        # Show existing description
                         st.write(st.session_state.get(full_desc_key, p["leiras"]))
-                        # Offer full description fetch only on demand
                         if full_desc_key not in st.session_state:
                             if st.button("📖 Teljes leírás betöltése", key=f"desc_btn_{p_id}_{kivalasztott_tag}"):
                                 with st.spinner("Betöltés..."):
@@ -666,39 +872,53 @@ with tab_kereso:
                                     st.session_state[full_desc_key] = full_desc
                                     st.rerun()
                 
-                # Show conflict warning in red box
                 if van_utkozes:
                     st.error(f"⚠️ **Átfedés van a következő programokkal:**  \n" + "  \n".join([f"- {u}" for u in utkozesek[p_id]]))
                     
             with col_chk:
-                checkbox_key = f"chk_{kivalasztott_tag}_{p_id}"
-                checked = st.checkbox("Érdekel", key=checkbox_key, value=be_van_jelolve)
-                
-                if checked and p_id not in st.session_state.valasztott[kivalasztott_tag]:
-                    st.session_state.valasztott[kivalasztott_tag].append(p_id)
-                    save_selections()
-                    st.rerun()
-                elif not checked and p_id in st.session_state.valasztott[kivalasztott_tag]:
-                    st.session_state.valasztott[kivalasztott_tag].remove(p_id)
-                    if f"{kivalasztott_tag}_{p_id}" in st.session_state.custom_durations:
-                        del st.session_state.custom_durations[f"{kivalasztott_tag}_{p_id}"]
-                    save_selections()
-                    st.rerun()
-                
-                if checked:
-                    # Slider to customize duration
-                    dur_key = f"slider_{kivalasztott_tag}_{p_id}"
+                # --- SZÉP GOMBOS KIVÁLASZTÁS a pipa helyett ---
+                if be_van_jelolve:
+                    # Program kijelölve: zöld kártya stílusú info + Leadom gomb
+                    st.markdown("""
+                    <div style="background:linear-gradient(135deg,#d1fae5,#a7f3d0);
+                                border:2px solid #10b981; border-radius:12px;
+                                padding:10px 12px; text-align:center; margin-bottom:8px;">
+                        <div style="font-size:1.6rem;">✅</div>
+                        <div style="font-size:0.72rem; font-weight:700; color:#065f46;
+                                    text-transform:uppercase; letter-spacing:0.05em;">A listádon van</div>
+                    </div>""", unsafe_allow_html=True)
+                    if st.button("➖ Leadom", key=f"remove_{kivalasztott_tag}_{p_id}",
+                                 use_container_width=True, type="secondary"):
+                        st.session_state.valasztott[kivalasztott_tag].remove(p_id)
+                        if f"{kivalasztott_tag}_{p_id}" in st.session_state.custom_durations:
+                            del st.session_state.custom_durations[f"{kivalasztott_tag}_{p_id}"]
+                        save_selections()
+                        st.rerun()
+                    # Időtartam finomhangolás
                     safe_duration = int(duration) if duration is not None else 60
                     custom_dur = st.number_input(
-                        "Hossz (perc):", 
-                        min_value=15, 
-                        max_value=360, 
-                        value=safe_duration,
-                        step=15,
-                        key=dur_key
+                        "⏱️ perc:",
+                        min_value=15, max_value=360,
+                        value=safe_duration, step=15,
+                        key=f"dur_{kivalasztott_tag}_{p_id}"
                     )
                     if custom_dur != duration:
                         st.session_state.custom_durations[f"{kivalasztott_tag}_{p_id}"] = custom_dur
+                        save_selections()
+                        st.rerun()
+                else:
+                    # Nincs kijelölve: hívogató gomb
+                    st.markdown("""
+                    <div style="background:#f8fafc; border:2px dashed #cbd5e1;
+                                border-radius:12px; padding:10px 12px;
+                                text-align:center; margin-bottom:8px;">
+                        <div style="font-size:1.6rem;">🎯</div>
+                        <div style="font-size:0.72rem; color:#94a3b8;
+                                    text-transform:uppercase; letter-spacing:0.05em;">Még nem jelölted</div>
+                    </div>""", unsafe_allow_html=True)
+                    if st.button("➕ Felveszem!", key=f"add_{kivalasztott_tag}_{p_id}",
+                                 use_container_width=True, type="primary"):
+                        st.session_state.valasztott[kivalasztott_tag].append(p_id)
                         save_selections()
                         st.rerun()
 
@@ -894,172 +1114,199 @@ with tab_csalad:
 
 # --- TAB 4: LIVE TRACKER ---
 with tab_elo:
-    st.subheader("⏱️ Élő Fesztiválkövető")
-    
+
     festival_start_dt = datetime.datetime(2026, 7, 8, 17, 0)
-    
+
+    # ── VISSZASZÁMLÁLÓ ha még nem kezdődött ──────────────────────────────
     if not use_simulated_time and current_dt < festival_start_dt:
-        st.write(f"Jelenlegi időpont: **{map_day_name(current_dt.strftime('%Y-%m-%d %H:%M'))} {current_dt.strftime('%H:%M')}**")
-        
-        # Show a beautiful countdown
         diff = festival_start_dt - current_dt
         days = diff.days
         hours, rem = divmod(diff.seconds, 3600)
         minutes, _ = divmod(rem, 60)
-        
-        st.info("### ⏳ A Szélrózsa találkozó hamarosan kezdődik!")
-        st.write("A fesztivál első programja (Nyitó áhítat) **2026. július 8-án 17:00-kor** kezdődik.")
-        
-        # Display countdown cards
-        st.markdown(f"""<div style="display: flex; gap: 15px; margin-top: 15px; margin-bottom: 20px;">
-<div style="background-color: #0e76bc; color: white; padding: 15px; border-radius: 8px; text-align: center; flex: 1;">
-    <div style="font-size: 2rem; font-weight: bold;">{days}</div>
-    <div style="font-size: 0.8rem; text-transform: uppercase;">nap</div>
-</div>
-<div style="background-color: #0e76bc; color: white; padding: 15px; border-radius: 8px; text-align: center; flex: 1;">
-    <div style="font-size: 2rem; font-weight: bold;">{hours}</div>
-    <div style="font-size: 0.8rem; text-transform: uppercase;">óra</div>
-</div>
-<div style="background-color: #0e76bc; color: white; padding: 15px; border-radius: 8px; text-align: center; flex: 1;">
-    <div style="font-size: 2rem; font-weight: bold;">{minutes}</div>
-    <div style="font-size: 0.8rem; text-transform: uppercase;">perc</div>
-</div>
-</div>""", unsafe_allow_html=True)
-        st.write("Az **Élő Fesztiválkövető** automatikusan bekapcsol és mutatja a futó programokat, amint elindul a találkozó!")
+
+        st.markdown(f"""
+        <div class="live-header">
+            <div class="live-dot" style="background:#f59e0b;"></div>
+            <div class="live-title">⏳ A Szélrózsa hamarosan indul!</div>
+            <div class="live-time-badge" style="border-color:#f59e0b; color:#fcd34d; background:rgba(245,158,11,0.15);">
+                {current_dt.strftime('%H:%M')}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown(f"""
+        <div style="display:flex; gap:14px; margin:20px 0 10px 0;">
+            <div style="flex:1; background:linear-gradient(135deg,#0e76bc,#1b4d6e); color:white;
+                        padding:20px 10px; border-radius:14px; text-align:center;
+                        box-shadow:0 6px 20px rgba(14,118,188,0.25);">
+                <div style="font-size:2.6rem; font-weight:900; font-family:'Barlow',sans-serif;">{days}</div>
+                <div style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; opacity:0.8;">nap</div>
+            </div>
+            <div style="flex:1; background:linear-gradient(135deg,#0e76bc,#1b4d6e); color:white;
+                        padding:20px 10px; border-radius:14px; text-align:center;
+                        box-shadow:0 6px 20px rgba(14,118,188,0.25);">
+                <div style="font-size:2.6rem; font-weight:900; font-family:'Barlow',sans-serif;">{hours}</div>
+                <div style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; opacity:0.8;">óra</div>
+            </div>
+            <div style="flex:1; background:linear-gradient(135deg,#0e76bc,#1b4d6e); color:white;
+                        padding:20px 10px; border-radius:14px; text-align:center;
+                        box-shadow:0 6px 20px rgba(14,118,188,0.25);">
+                <div style="font-size:2.6rem; font-weight:900; font-family:'Barlow',sans-serif;">{minutes}</div>
+                <div style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; opacity:0.8;">perc</div>
+            </div>
+        </div>
+        <p style="color:#64748b; font-size:0.88rem; text-align:center; margin-top:8px;">
+            A találkozó első programja <strong>2026. július 8-án 17:00-kor</strong> kezdődik (Nyitó áhítat – Zajforrás).
+        </p>
+        """, unsafe_allow_html=True)
+
+    # ── ÉLŐ NÉZET ──────────────────────────────────────────────────────
     else:
-        st.write(f"Jelenlegi időpont: **{map_day_name(current_dt.strftime('%Y-%m-%d %H:%M'))} {current_dt.strftime('%H:%M')}**")
-        
-        # Calculate running programs
+        # -- Élő fejléc --
+        st.markdown(f"""
+        <div class="live-header">
+            <div class="live-dot"></div>
+            <div class="live-title">🟢 Élő Fesztiválkövető</div>
+            <div class="live-time-badge">MOST · {current_dt.strftime('%H:%M')}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # -- Számítsuk ki a futó és közelgő programokat --
         fut_programok = []
         kovetkezo_programok = []
-        
+
         for p in st.session_state.programok:
             if not p["idopont"]:
                 continue
             try:
                 p_start = datetime.datetime.strptime(p["idopont"], "%Y-%m-%d %H:%M")
-                # Get customized or default duration
                 duration = st.session_state.custom_durations.get(f"Anya_{p['id']}", p["tartam_perc"] or 60)
                 p_end = p_start + datetime.timedelta(minutes=duration)
-                
+
                 if p_start <= current_dt <= p_end:
                     elapsed = (current_dt - p_start).total_seconds() / 60
                     remaining = (p_end - current_dt).total_seconds() / 60
-                    progress = min(1.0, max(0.0, elapsed / duration))
+                    progress_pct = min(100, max(0, int(elapsed / duration * 100)))
                     fut_programok.append({
-                        "program": p,
-                        "start": p_start,
-                        "end": p_end,
-                        "duration": duration,
-                        "elapsed": elapsed,
-                        "remaining": remaining,
-                        "progress": progress
+                        "program": p, "start": p_start, "end": p_end,
+                        "duration": duration, "elapsed": elapsed,
+                        "remaining": remaining, "progress_pct": progress_pct
                     })
                 elif p_start > current_dt and (p_start - current_dt).total_seconds() / 60 <= 60:
                     starts_in = (p_start - current_dt).total_seconds() / 60
-                    kovetkezo_programok.append({
-                        "program": p,
-                        "start": p_start,
-                        "starts_in": starts_in
-                    })
+                    kovetkezo_programok.append({"program": p, "start": p_start, "starts_in": starts_in})
             except Exception:
                 pass
-                
+
+        # ── FUTÓ PROGRAMOK ───────────────────────────────────────────────
         if not fut_programok:
-            st.info("Jelenleg nem fut egyetlen program sem ezen az időponton. Válasz ki egy másik időpontot az Időszimulátorban a bal oldalon!")
+            st.markdown("""
+            <div class="no-live-msg">
+                <div class="emoji">😴</div>
+                <h3>Éppen nincs futó program</h3>
+                <p>Ezen az időponton szünet van, vagy a fesztivál ezen a napon már véget ért.</p>
+            </div>
+            """, unsafe_allow_html=True)
         else:
-            st.write("### 🟢 Éppen futó programok")
-            
-            # Group running programs by location
-            grouped_running = {}
-            for item in fut_programok:
-                loc = item["program"]["helyszin"]
-                if loc not in grouped_running:
-                    grouped_running[loc] = []
-                grouped_running[loc].append(item)
-                
-            active_locations = sorted(list(grouped_running.keys()))
-            
-            # Display columns
-            cols = st.columns(min(3, len(active_locations)))
-            for idx, loc in enumerate(active_locations):
-                col_obj = cols[idx % len(cols)]
-                with col_obj:
-                    loc_num = get_location_number(loc)
-                    loc_title = f"{loc} (Térkép: {loc_num})" if loc_num else loc
-                    
-                    st.markdown(f"""
-                    <div style="background-color: #0e76bc10; border-left: 5px solid #0e76bc; padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; margin-top: 10px;">
-                        <h5 style="margin: 0; color: #0e76bc; font-weight: bold;">📍 {loc_title}</h5>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    for item in grouped_running[loc]:
-                        p = item["program"]
-                        
-                        # Check selection status for family members
-                        reszvevok = []
-                        for member in st.session_state.csaladtagok:
-                            if p["id"] in st.session_state.valasztott.get(member, []):
-                                reszvevok.append(member)
-                                
-                        card_bg = "#ffffff"
-                        border_color = "#e2e8f0"
-                        if reszvevok:
-                            card_bg = "#ecfdf5" # soft green for selected
-                            border_color = "#10b981"
-                            
-                        st.markdown(f"""<div style="background-color: {card_bg}; border: 1px solid {border_color}; padding: 10px; border-radius: 6px; margin-bottom: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
-<div style="font-weight: bold; font-size: 0.95rem; color: #0f172a;">{p['nev']}</div>
-<div style="font-size: 0.8rem; color: #64748b; margin-top: 2px;">
-    🕒 {item['start'].strftime('%H:%M')} - {item['end'].strftime('%H:%M')} ({int(item['duration'])} perc)
-</div>
-<div style="font-size: 0.8rem; color: #334155; margin-top: 4px; font-style: italic;">
-    Lement: {int(item['elapsed'])} perc | Vissza van: {int(item['remaining'])} perc
-</div>
-</div>""", unsafe_allow_html=True)
-                        
-                        st.progress(item["progress"])
-                        
-                        if loc_num:
-                            if st.button("🗺️ Térkép megnyitása", key=f"map_btn_{p['id']}_live", help="Helyszín megmutatása a térképen", use_container_width=True):
-                                mutasd_terkepet(p["helyszin"], loc_num[1:])
-                                
-                        if reszvevok:
-                            st.markdown(f"<div style='color: #047857; font-size: 0.75rem; margin-bottom: 12px; font-weight: 500;'>👥 Résztvevők: {', '.join(reszvevok)}</div>", unsafe_allow_html=True)
-                            
-        if kovetkezo_programok:
-            st.write("---")
-            st.write("### ⏳ A következő 60 percben kezdődő programok")
-            
-            kovetkezo_programok = sorted(kovetkezo_programok, key=lambda x: x["starts_in"])
-            
-            for item in kovetkezo_programok[:8]:
+            n = len(fut_programok)
+            st.markdown(f"""
+            <div style="color:#475569; font-size:0.85rem; margin-bottom:14px;">
+                <strong>{n}</strong> program zajlik éppen a fesztiválon
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Rendezzük helyszín szerint, majd 2 hasábban jelenítjük meg
+            fut_programok_sorted = sorted(fut_programok, key=lambda x: x["program"]["helyszin"])
+            col_left, col_right = st.columns(2)
+
+            for idx, item in enumerate(fut_programok_sorted):
                 p = item["program"]
                 loc_num = get_location_number(p["helyszin"])
-                loc_display = f"{p['helyszin']} (Térkép: {loc_num})" if loc_num else p['helyszin']
-                
-                reszvevok = []
-                for member in st.session_state.csaladtagok:
-                    if p["id"] in st.session_state.valasztott.get(member, []):
-                        reszvevok.append(member)
-                        
-                badge_style = "background-color: #f1f5f9; color: #475569;"
+
+                # Ki vesz rajta részt a családból?
+                reszvevok = [m for m in st.session_state.csaladtagok
+                             if p["id"] in st.session_state.valasztott.get(m, [])]
+                is_selected = len(reszvevok) > 0
+
+                # Résztvevő chip-ek HTML-je
+                chips_html = ""
+                for m in st.session_state.csaladtagok:
+                    if p["id"] in st.session_state.valasztott.get(m, []):
+                        chips_html += f'<span class="live-member-chip selected-chip">👤 {m}</span>'
+                    # else: nem jelenítjük meg a nem résztvevőket
+
+                card_class = "live-card selected" if is_selected else "live-card"
+
+                card_html = f"""
+                <div class="{card_class}">
+                    <div class="live-card-accent"></div>
+                    <div style="padding-left:10px;">
+                        <div class="live-card-title">{p['nev']}</div>
+                        <div class="live-card-meta">
+                            <span>🕒 {item['start'].strftime('%H:%M')} – {item['end'].strftime('%H:%M')}</span>
+                            <span>📍 {p['helyszin']}{(' · ' + loc_num) if loc_num else ''}</span>
+                            <span>⏱️ {int(item['duration'])} perc</span>
+                        </div>
+                        <div class="live-progress-wrap">
+                            <div class="live-progress-bar" style="width:{item['progress_pct']}%;"></div>
+                        </div>
+                        <div class="live-progress-label">
+                            <span>Eltelt: {int(item['elapsed'])} perc</span>
+                            <span>{item['progress_pct']}%</span>
+                            <span>Marad: {int(item['remaining'])} perc</span>
+                        </div>
+                        {('<div class="live-members">' + chips_html + '</div>') if chips_html else ''}
+                    </div>
+                </div>
+                """
+
+                target_col = col_left if idx % 2 == 0 else col_right
+                with target_col:
+                    st.markdown(card_html, unsafe_allow_html=True)
+                    if loc_num:
+                        if st.button("🗺️ Helyszín", key=f"live_map_{p['id']}",
+                                     use_container_width=True):
+                            mutasd_terkepet(p["helyszin"], loc_num[1:])
+
+        # ── KÖZELGŐ PROGRAMOK ────────────────────────────────────────────
+        if kovetkezo_programok:
+            kovetkezo_programok = sorted(kovetkezo_programok, key=lambda x: x["starts_in"])
+
+            st.markdown("""
+            <div class="upcoming-header">
+                ⏳ Következő 60 percben
+            </div>
+            """, unsafe_allow_html=True)
+
+            for item in kovetkezo_programok[:10]:
+                p = item["program"]
+                loc_num = get_location_number(p["helyszin"])
+                loc_display = f"{p['helyszin']}{(' · ' + loc_num) if loc_num else ''}"
+
+                reszvevok = [m for m in st.session_state.csaladtagok
+                             if p["id"] in st.session_state.valasztott.get(m, [])]
+                is_sel = len(reszvevok) > 0
+                card_cls = "upcoming-card selected" if is_sel else "upcoming-card"
+
+                members_html = ""
                 if reszvevok:
-                    badge_style = "background-color: #d1fae5; color: #065f46; font-weight: bold;"
-                    
-                st.markdown(f"""<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background-color: #ffffff; border-radius: 6px; margin-bottom: 6px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.01);">
-<div>
-    <strong style="color: #0f172a; font-size: 0.9rem;">{p['nev']}</strong><br/>
-    <span style="font-size: 0.75rem; color: #64748b;">📍 {loc_display}</span>
-</div>
-<div style="text-align: right;">
-    <span style="{badge_style} padding: 3px 6px; border-radius: 12px; font-size: 0.75rem; display: inline-block;">
-        {int(item['starts_in'])} perc múlva ({item['start'].strftime('%H:%M')})
-    </span>
-    {"<br/><span style='font-size: 0.7rem; color: #047857; font-weight: 500;'>👥 " + ", ".join(reszvevok) + "</span>" if reszvevok else ""}
-</div>
-</div>""", unsafe_allow_html=True)
+                    chips = "".join(f'<span class="live-member-chip selected-chip">{m}</span>' for m in reszvevok)
+                    members_html = f'<div class="live-members" style="margin-top:4px;">{chips}</div>'
+
+                st.markdown(f"""
+                <div class="{card_cls}">
+                    <div>
+                        <div class="upcoming-name">{p['nev']}</div>
+                        <div class="upcoming-sub">📍 {loc_display}</div>
+                        {members_html}
+                    </div>
+                    <div class="upcoming-timer">
+                        <div class="upcoming-min">{int(item['starts_in'])}</div>
+                        <div class="upcoming-min-label">perc múlva</div>
+                        <div class="upcoming-hm">{item['start'].strftime('%H:%M')}</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
 
 # --- TAB 5: FESTIVAL MAP ---
 with tab_terkep:
