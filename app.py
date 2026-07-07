@@ -130,38 +130,39 @@ st.markdown("""
 
 # --- 3. SCRAPER DATA LOAD & CACHING ---
 import os
+import json
 ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 PROGRAMS_FILE = os.path.join(ROOT_PATH, "programs_database.json")
 
-@st.cache_data
-def get_scraped_programs():
-    import json
+@st.cache_resource
+def _load_programs_once():
+    """Loads programs exactly once per server lifetime. Never re-runs unless server restarts."""
     if os.path.exists(PROGRAMS_FILE):
         try:
-            print(f"[CACHE] JSON fájl megtalálva: {PROGRAMS_FILE} - gyors betöltés")
+            print(f"[CACHE] JSON betöltése: {PROGRAMS_FILE}")
             with open(PROGRAMS_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            print(f"[CACHE] {len(data)} program betöltve JSON-ből.")
+            print(f"[CACHE] {len(data)} program betöltve JSON-ből (gyors).")
             return data
         except Exception as e:
             print(f"[CACHE] JSON olvasási hiba: {e}")
-            pass
-            
-    # If file doesn't exist, run the scraper and save results locally
+
     print(f"[CACHE] JSON nem található, scraper futtatása...")
     programs = scraper.scrape_programs()
     print(f"[CACHE] Scraper lefutott: {len(programs)} program.")
     try:
         with open(PROGRAMS_FILE, "w", encoding="utf-8") as f:
             json.dump(programs, f, ensure_ascii=False, indent=4)
-        print(f"[CACHE] JSON elmentve: {PROGRAMS_FILE}")
     except Exception as e:
         print(f"[CACHE] JSON mentési hiba: {e}")
     return programs
 
+def get_scraped_programs():
+    return _load_programs_once()
+
 # Force clear cache action helper
 if 'clear_cache' in st.session_state and st.session_state.clear_cache:
-    get_scraped_programs.clear()
+    st.cache_resource.clear()
     st.session_state.clear_cache = False
 
 # --- 4. SESSION STATE INITIALIZATION ---
