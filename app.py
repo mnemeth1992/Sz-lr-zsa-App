@@ -135,15 +135,18 @@ ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 PROGRAMS_FILE = os.path.join(ROOT_PATH, "programs_database.json")
 
 # Import pre-built program data directly from Python module (fastest, always works)
+_BUILTIN_PROGRAMS = None
+_DATA_SOURCE = "ismeretlen"
 try:
     from programs_data import PROGRAMS as _BUILTIN_PROGRAMS
-except ImportError:
-    _BUILTIN_PROGRAMS = None
+    _DATA_SOURCE = "beépített modul"
+except Exception as _e:
+    _DATA_SOURCE = f"modul hiba: {_e}"
 
 def get_scraped_programs():
     # 1. Use built-in Python module (instant, no I/O, no network)
     if _BUILTIN_PROGRAMS:
-        return _BUILTIN_PROGRAMS
+        return list(_BUILTIN_PROGRAMS)
 
     # 2. Try local JSON file
     if os.path.exists(PROGRAMS_FILE):
@@ -500,6 +503,7 @@ with st.sidebar:
     # Scraping utility actions
     st.write("---")
     st.caption(f"Összes szinkronizált program: {len(st.session_state.programok)}")
+    st.caption(f"📦 Adatforrás: {_DATA_SOURCE}")
     if st.button("🔄 Adatok újratöltése", help="Programok frissítése az élő honlapról és mentett tervek szinkronizálása"):
         # Clear the resource cache so _load_programs_once() runs again
         st.cache_resource.clear()
