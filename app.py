@@ -518,25 +518,11 @@ with st.sidebar:
     st.write("---")
     st.caption(f"Összes szinkronizált program: {len(st.session_state.programok)}")
     if st.button("🔄 Adatok újratöltése", help="Programok frissítése az élő honlapról és mentett tervek szinkronizálása"):
-        # Clear local programs JSON database to force fresh scrape on next app run
-        import os
-        prog_file = os.path.join(ROOT_PATH, "programs_database.json")
-        if os.path.exists(prog_file):
-            try:
-                os.remove(prog_file)
-            except Exception:
-                pass
-        # Clear Streamlit cache immediately
-        st.cache_data.clear()
-        # Force delete state variables so they are loaded completely fresh from the scraper and JSON database
+        # Clear the resource cache so _load_programs_once() runs again
+        st.cache_resource.clear()
+        # Force reload programs from GitHub/scraper on next run
         if 'programok' in st.session_state:
             del st.session_state.programok
-        if 'csaladtagok' in st.session_state:
-            del st.session_state.csaladtagok
-        if 'valasztott' in st.session_state:
-            del st.session_state.valasztott
-        if 'custom_durations' in st.session_state:
-            del st.session_state.custom_durations
         st.rerun()
 
 # --- 8. TABS DEFINITION ---
