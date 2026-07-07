@@ -431,25 +431,22 @@ with st.sidebar:
             save_selections()
             st.rerun()
             
-    # Mobile Help Section
+    # --- SIMULATED TIME DETERMINATION ---
+    import datetime
+    now = datetime.datetime.now()
+    
     st.write("---")
-    with st.expander("📲 Futtatás Mobilon"):
-        st.write("""
-        Hogy a Szélrózsán minden családtag elérje a tervezőt a telefonján:
-        
-        **1. Streamlit Cloud (Ajánlott & Ingyenes)**
-        Exponáld az appot publikus weboldalként:
-        - Töltsd fel ezt a mappát **GitHubra**.
-        - Nyisd meg a [share.streamlit.io](https://share.streamlit.io) oldalt és lépj be a GitHuboddal.
-        - Kattints a **"Deploy an app"** gombra és válaszd ki a feltöltött repót.
-        - Pár másodperc múlva kapsz egy linket, amit megoszthatsz a családdal mobilon!
-        
-        **2. Helyi Hotspot megosztás**
-        Ha egy Wi-Fi hálózaton vagytok a fesztiválon (pl. egy telefonról megosztott hotspoton):
-        - Futtasd az appot a gépeden.
-        - A telefonod böngészőjében nyisd meg a géped IP-címét ezen a porton:
-          `http://<GEP_IP_CIME>:8501`
-        """)
+    st.subheader("⏰ Időszimulátor")
+    st.write("Teszteld az élő követőt tetszőleges fesztiválidőponttal:")
+    use_simulated_time = st.toggle("Szimulált idő használata", value=True)
+    if use_simulated_time:
+        sim_date = st.date_input("Szimulált dátum:", datetime.date(2026, 7, 8), min_value=datetime.date(2026, 7, 8), max_value=datetime.date(2026, 7, 12))
+        sim_time = st.slider("Szimulált idő:", datetime.time(0, 0), datetime.time(23, 45), datetime.time(18, 0), step=datetime.timedelta(minutes=15))
+        current_dt = datetime.datetime.combine(sim_date, sim_time)
+    else:
+        current_dt = now
+    
+    st.caption(f"Aktuális időpont: {current_dt.strftime('%Y-%m-%d %H:%M')}")
         
     # Scraping utility actions
     st.write("---")
@@ -469,10 +466,11 @@ with st.sidebar:
         st.rerun()
 
 # --- 8. TABS DEFINITION ---
-tab_kereso, tab_naptar, tab_csalad, tab_terkep = st.tabs([
+tab_kereso, tab_naptar, tab_csalad, tab_elo, tab_terkep = st.tabs([
     "🔍 Program Kereső & Kínálat", 
     "📅 Személyes Naptárak", 
     "👨‍👩‍👧‍👦 Családi Összesített Menetrend",
+    "⏱️ Élő Fesztiválkövető",
     "🗺️ Fesztivál Térkép"
 ])
 
@@ -814,28 +812,179 @@ with tab_csalad:
                             for m in members:
                                 st.markdown(f"- 👤 {m}")
 
-# --- TAB 4: FESTIVAL MAP ---
+# --- TAB 4: LIVE TRACKER ---
+with tab_elo:
+    st.subheader("⏱️ Élő Fesztiválkövető")
+    st.write(f"Jelenlegi szimulált/élő időpont: **{map_day_name(current_dt.strftime('%Y-%m-%d %H:%M'))} {current_dt.strftime('%H:%M')}**")
+    
+    # Calculate running programs
+    fut_programok = []
+    kovetkezo_programok = []
+    
+    for p in st.session_state.programok:
+        if not p["idopont"]:
+            continue
+        try:
+            p_start = datetime.datetime.strptime(p["idopont"], "%Y-%m-%d %H:%M")
+            # Get customized or default duration
+            duration = st.session_state.custom_durations.get(f"Anya_{p['id']}", p["tartam_perc"])
+            p_end = p_start + datetime.timedelta(minutes=duration)
+            
+            if p_start <= current_dt <= p_end:
+                elapsed = (current_dt - p_start).total_seconds() / 60
+                remaining = (p_end - current_dt).total_seconds() / 60
+                progress = min(1.0, max(0.0, elapsed / duration))
+                fut_programok.append({
+                    "program": p,
+                    "start": p_start,
+                    "end": p_end,
+                    "duration": duration,
+                    "elapsed": elapsed,
+                    "remaining": remaining,
+                    "progress": progress
+                })
+            elif p_start > current_dt and (p_start - current_dt).total_seconds() / 60 <= 60:
+                starts_in = (p_start - current_dt).total_seconds() / 60
+                kovetkezo_programok.append({
+                    "program": p,
+                    "start": p_start,
+                    "starts_in": starts_in
+                })
+        except Exception:
+            pass
+            
+    if not fut_programok:
+        st.info("Jelenleg nem fut egyetlen program sem ezen az időponton. Válasz ki egy másik időpontot az Időszimulátorban a bal oldalon!")
+    else:
+        st.write("### 🟢 Éppen futó programok")
+        
+        # Group running programs by location
+        grouped_running = {}
+        for item in fut_programok:
+            loc = item["program"]["helyszin"]
+            if loc not in grouped_running:
+                grouped_running[loc] = []
+            grouped_running[loc].append(item)
+            
+        active_locations = sorted(list(grouped_running.keys()))
+        
+        # Display columns
+        cols = st.columns(min(3, len(active_locations)))
+        for idx, loc in enumerate(active_locations):
+            col_obj = cols[idx % len(cols)]
+            with col_obj:
+                loc_num = get_location_number(loc)
+                loc_title = f"{loc} (Térkép: {loc_num})" if loc_num else loc
+                
+                st.markdown(f"""
+                <div style="background-color: #0e76bc10; border-left: 5px solid #0e76bc; padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; margin-top: 10px;">
+                    <h5 style="margin: 0; color: #0e76bc; font-weight: bold;">📍 {loc_title}</h5>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                for item in grouped_running[loc]:
+                    p = item["program"]
+                    
+                    # Check selection status for family members
+                    reszvevok = []
+                    for member in st.session_state.csaladtagok:
+                        if p["id"] in st.session_state.valasztott.get(member, []):
+                            reszvevok.append(member)
+                            
+                    card_bg = "#ffffff"
+                    border_color = "#e2e8f0"
+                    if reszvevok:
+                        card_bg = "#ecfdf5" # soft green for selected
+                        border_color = "#10b981"
+                        
+                    st.markdown(f"""
+                    <div style="background-color: {card_bg}; border: 1px solid {border_color}; padding: 10px; border-radius: 6px; margin-bottom: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                        <div style="font-weight: bold; font-size: 0.95rem; color: #0f172a;">{p['nev']}</div>
+                        <div style="font-size: 0.8rem; color: #64748b; margin-top: 2px;">
+                            🕒 {item['start'].strftime('%H:%M')} - {item['end'].strftime('%H:%M')} ({int(item['duration'])} perc)
+                        </div>
+                        <div style="font-size: 0.8rem; color: #334155; margin-top: 4px; font-style: italic;">
+                            Lement: {int(item['elapsed'])} perc | Vissza van: {int(item['remaining'])} perc
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    st.progress(item["progress"])
+                    
+                    if reszvevok:
+                        st.markdown(f"<div style='color: #047857; font-size: 0.75rem; margin-bottom: 12px; font-weight: 500;'>👥 Résztvevők: {', '.join(reszvevok)}</div>", unsafe_allow_html=True)
+                        
+    if kovetkezo_programok:
+        st.write("---")
+        st.write("### ⏳ A következő 60 percben kezdődő programok")
+        
+        kovetkezo_programok = sorted(kovetkezo_programok, key=lambda x: x["starts_in"])
+        
+        for item in kovetkezo_programok[:8]:
+            p = item["program"]
+            loc_num = get_location_number(p["helyszin"])
+            loc_display = f"{p['helyszin']} (Térkép: {loc_num})" if loc_num else p['helyszin']
+            
+            reszvevok = []
+            for member in st.session_state.csaladtagok:
+                if p["id"] in st.session_state.valasztott.get(member, []):
+                    reszvevok.append(member)
+                    
+            badge_style = "background-color: #f1f5f9; color: #475569;"
+            if reszvevok:
+                badge_style = "background-color: #d1fae5; color: #065f46; font-weight: bold;"
+                
+            st.markdown(f"""
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background-color: #ffffff; border-radius: 6px; margin-bottom: 6px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.01);">
+                <div>
+                    <strong style="color: #0f172a; font-size: 0.9rem;">{p['nev']}</strong><br/>
+                    <span style="font-size: 0.75rem; color: #64748b;">📍 {loc_display}</span>
+                </div>
+                <div style="text-align: right;">
+                    <span style="{badge_style} padding: 3px 6px; border-radius: 12px; font-size: 0.75rem; display: inline-block;">
+                        {int(item['starts_in'])} perc múlva ({item['start'].strftime('%H:%M')})
+                    </span>
+                    {"<br/><span style='font-size: 0.7rem; color: #047857; font-weight: 500;'>👥 " + ", ".join(reszvevok) + "</span>" if reszvevok else ""}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+# --- TAB 5: FESTIVAL MAP ---
 with tab_terkep:
     st.subheader("🗺️ Fesztivál Térkép & Helyszín Kódok")
     st.write("A 2026-os soproni Szélrózsa találkozó hivatalos helyszínrajza:")
     
     # Display map parts using absolute paths
     import os
+    full_map_path = os.path.join(ROOT_PATH, "full_map.jpg")
     p1_path = os.path.join(ROOT_PATH, "map_part1.jpg")
     p2_path = os.path.join(ROOT_PATH, "map_part2.jpg")
     p3_path = os.path.join(ROOT_PATH, "map_part3.jpg")
     uploaded_path = os.path.join(ROOT_PATH, "uploaded_map.png")
     
-    if os.path.exists(p1_path) and os.path.exists(p2_path) and os.path.exists(p3_path):
-        st.write("A térkép 3 része (görgess le a teljes megtekintéshez):")
-        
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.image(p1_path, caption="1. rész: Helyszínlista és P épület", use_container_width=True)
-        with col2:
-            st.image(p2_path, caption="2. rész: Erzsébet-kert (Középső terület)", use_container_width=True)
-        with col3:
-            st.image(p3_path, caption="3. rész: GYIK & Bánfalvi út", use_container_width=True)
+    if os.path.exists(full_map_path):
+        st.image(full_map_path, caption="Egyesített Szélrósa Helyszínrajz (kattints a nagyításhoz)", use_container_width=True)
+    elif os.path.exists(p1_path) and os.path.exists(p2_path) and os.path.exists(p3_path):
+        try:
+            from PIL import Image
+            img1 = Image.open(p1_path)
+            img2 = Image.open(p2_path)
+            img3 = Image.open(p3_path)
+            combined_img = Image.new("RGB", (img1.width + img2.width + img3.width, img1.height))
+            combined_img.paste(img1, (0, 0))
+            combined_img.paste(img2, (img1.width, 0))
+            combined_img.paste(img3, (img1.width + img2.width, 0))
+            combined_img.save(full_map_path, "JPEG", quality=90)
+            st.image(full_map_path, caption="Egyesített Szélrósa Helyszínrajz (kattints a nagyításhoz)", use_container_width=True)
+        except Exception:
+            # Fallback to separate columns if PIL fails
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.image(p1_path, caption="1. rész: Helyszínlista és P épület", use_container_width=True)
+            with col2:
+                st.image(p2_path, caption="2. rész: Erzsébet-kert (Középső terület)", use_container_width=True)
+            with col3:
+                st.image(p3_path, caption="3. rész: GYIK & Bánfalvi út", use_container_width=True)
     elif os.path.exists(uploaded_path):
         st.image(uploaded_path, caption="Feltöltött Szélrósa Helyszínrajz", use_container_width=True)
     else:
