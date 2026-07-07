@@ -129,9 +129,27 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- 3. SCRAPER DATA LOAD & CACHING ---
-@st.cache_data(show_spinner="Adatok szinkronizálása a Szélrózsa honlapjáról...")
+import os
+ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
+PROGRAMS_FILE = os.path.join(ROOT_PATH, "programs_database.json")
+
 def get_scraped_programs():
-    return scraper.scrape_programs()
+    import json
+    if os.path.exists(PROGRAMS_FILE):
+        try:
+            with open(PROGRAMS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+            
+    # If file doesn't exist, run the scraper and save results locally
+    programs = scraper.scrape_programs()
+    try:
+        with open(PROGRAMS_FILE, "w", encoding="utf-8") as f:
+            json.dump(programs, f, ensure_ascii=False, indent=4)
+    except Exception:
+        pass
+    return programs
 
 # Force clear cache action helper
 if 'clear_cache' in st.session_state and st.session_state.clear_cache:
@@ -152,7 +170,6 @@ import json
 import os
 
 # Absolute path resolution
-ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 SELECTIONS_FILE = os.path.join(ROOT_PATH, "csalad_selections.json")
 
 def load_selections():
@@ -470,25 +487,21 @@ with st.sidebar:
             
     # --- SIMULATED TIME DETERMINATION ---
     import datetime
-    now = datetime.datetime.now()
-    
-    st.write("---")
-    st.subheader("⏰ Időszimulátor")
-    st.write("Teszteld az élő követőt tetszőleges fesztiválidőponttal:")
-    use_simulated_time = st.toggle("Szimulált idő használata", value=True)
-    if use_simulated_time:
-        sim_date = st.date_input("Szimulált dátum:", datetime.date(2026, 7, 8), min_value=datetime.date(2026, 7, 8), max_value=datetime.date(2026, 7, 12))
-        sim_time = st.slider("Szimulált idő:", datetime.time(0, 0), datetime.time(23, 45), datetime.time(18, 0), step=datetime.timedelta(minutes=15))
-        current_dt = datetime.datetime.combine(sim_date, sim_time)
-    else:
-        current_dt = now
-    
-    st.caption(f"Aktuális időpont: {current_dt.strftime('%Y-%m-%d %H:%M')}")
+    current_dt = datetime.datetime.now()
+    use_simulated_time = False
         
     # Scraping utility actions
     st.write("---")
     st.caption(f"Összes szinkronizált program: {len(st.session_state.programok)}")
     if st.button("🔄 Adatok újratöltése", help="Programok frissítése az élő honlapról és mentett tervek szinkronizálása"):
+        # Clear local programs JSON database to force fresh scrape on next app run
+        import os
+        prog_file = os.path.join(ROOT_PATH, "programs_database.json")
+        if os.path.exists(prog_file):
+            try:
+                os.remove(prog_file)
+            except Exception:
+                pass
         # Clear Streamlit cache immediately
         st.cache_data.clear()
         # Force delete state variables so they are loaded completely fresh from the scraper and JSON database
@@ -909,9 +922,8 @@ with tab_elo:
 </div>
 </div>""", unsafe_allow_html=True)
         st.write("Az **Élő Fesztiválkövető** automatikusan bekapcsol és mutatja a futó programokat, amint elindul a találkozó!")
-        st.info("💡 **TIPP:** Ha szeretnéd kipróbálni az élő követőt már most, kapcsold be a bal oldali sávban az **Időszimulátort**, és állíts be egy tetszőleges fesztivál időpontot!")
     else:
-        st.write(f"Jelenlegi szimulált/élő időpont: **{map_day_name(current_dt.strftime('%Y-%m-%d %H:%M'))} {current_dt.strftime('%H:%M')}**")
+        st.write(f"Jelenlegi időpont: **{map_day_name(current_dt.strftime('%Y-%m-%d %H:%M'))} {current_dt.strftime('%H:%M')}**")
         
         # Calculate running programs
         fut_programok = []
