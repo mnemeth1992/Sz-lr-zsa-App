@@ -878,143 +878,172 @@ with tab_csalad:
 # --- TAB 4: LIVE TRACKER ---
 with tab_elo:
     st.subheader("⏱️ Élő Fesztiválkövető")
-    st.write(f"Jelenlegi szimulált/élő időpont: **{map_day_name(current_dt.strftime('%Y-%m-%d %H:%M'))} {current_dt.strftime('%H:%M')}**")
     
-    # Calculate running programs
-    fut_programok = []
-    kovetkezo_programok = []
+    festival_start_dt = datetime.datetime(2026, 7, 8, 17, 0)
     
-    for p in st.session_state.programok:
-        if not p["idopont"]:
-            continue
-        try:
-            p_start = datetime.datetime.strptime(p["idopont"], "%Y-%m-%d %H:%M")
-            # Get customized or default duration
-            duration = st.session_state.custom_durations.get(f"Anya_{p['id']}", p["tartam_perc"])
-            p_end = p_start + datetime.timedelta(minutes=duration)
-            
-            if p_start <= current_dt <= p_end:
-                elapsed = (current_dt - p_start).total_seconds() / 60
-                remaining = (p_end - current_dt).total_seconds() / 60
-                progress = min(1.0, max(0.0, elapsed / duration))
-                fut_programok.append({
-                    "program": p,
-                    "start": p_start,
-                    "end": p_end,
-                    "duration": duration,
-                    "elapsed": elapsed,
-                    "remaining": remaining,
-                    "progress": progress
-                })
-            elif p_start > current_dt and (p_start - current_dt).total_seconds() / 60 <= 60:
-                starts_in = (p_start - current_dt).total_seconds() / 60
-                kovetkezo_programok.append({
-                    "program": p,
-                    "start": p_start,
-                    "starts_in": starts_in
-                })
-        except Exception:
-            pass
-            
-    if not fut_programok:
-        st.info("Jelenleg nem fut egyetlen program sem ezen az időponton. Válasz ki egy másik időpontot az Időszimulátorban a bal oldalon!")
+    if not use_simulated_time and current_dt < festival_start_dt:
+        st.write(f"Jelenlegi időpont: **{map_day_name(current_dt.strftime('%Y-%m-%d %H:%M'))} {current_dt.strftime('%H:%M')}**")
+        
+        # Show a beautiful countdown
+        diff = festival_start_dt - current_dt
+        days = diff.days
+        hours, rem = divmod(diff.seconds, 3600)
+        minutes, _ = divmod(rem, 60)
+        
+        st.info("### ⏳ A Szélrózsa találkozó hamarosan kezdődik!")
+        st.write("A fesztivál első programja (Nyitó áhítat) **2026. július 8-án 17:00-kor** kezdődik.")
+        
+        # Display countdown cards
+        st.markdown(f"""<div style="display: flex; gap: 15px; margin-top: 15px; margin-bottom: 20px;">
+<div style="background-color: #0e76bc; color: white; padding: 15px; border-radius: 8px; text-align: center; flex: 1;">
+    <div style="font-size: 2rem; font-weight: bold;">{days}</div>
+    <div style="font-size: 0.8rem; text-transform: uppercase;">nap</div>
+</div>
+<div style="background-color: #0e76bc; color: white; padding: 15px; border-radius: 8px; text-align: center; flex: 1;">
+    <div style="font-size: 2rem; font-weight: bold;">{hours}</div>
+    <div style="font-size: 0.8rem; text-transform: uppercase;">óra</div>
+</div>
+<div style="background-color: #0e76bc; color: white; padding: 15px; border-radius: 8px; text-align: center; flex: 1;">
+    <div style="font-size: 2rem; font-weight: bold;">{minutes}</div>
+    <div style="font-size: 0.8rem; text-transform: uppercase;">perc</div>
+</div>
+</div>""", unsafe_allow_html=True)
+        st.write("Az **Élő Fesztiválkövető** automatikusan bekapcsol és mutatja a futó programokat, amint elindul a találkozó!")
+        st.info("💡 **TIPP:** Ha szeretnéd kipróbálni az élő követőt már most, kapcsold be a bal oldali sávban az **Időszimulátort**, és állíts be egy tetszőleges fesztivál időpontot!")
     else:
-        st.write("### 🟢 Éppen futó programok")
+        st.write(f"Jelenlegi szimulált/élő időpont: **{map_day_name(current_dt.strftime('%Y-%m-%d %H:%M'))} {current_dt.strftime('%H:%M')}**")
         
-        # Group running programs by location
-        grouped_running = {}
-        for item in fut_programok:
-            loc = item["program"]["helyszin"]
-            if loc not in grouped_running:
-                grouped_running[loc] = []
-            grouped_running[loc].append(item)
+        # Calculate running programs
+        fut_programok = []
+        kovetkezo_programok = []
+        
+        for p in st.session_state.programok:
+            if not p["idopont"]:
+                continue
+            try:
+                p_start = datetime.datetime.strptime(p["idopont"], "%Y-%m-%d %H:%M")
+                # Get customized or default duration
+                duration = st.session_state.custom_durations.get(f"Anya_{p['id']}", p["tartam_perc"])
+                p_end = p_start + datetime.timedelta(minutes=duration)
+                
+                if p_start <= current_dt <= p_end:
+                    elapsed = (current_dt - p_start).total_seconds() / 60
+                    remaining = (p_end - current_dt).total_seconds() / 60
+                    progress = min(1.0, max(0.0, elapsed / duration))
+                    fut_programok.append({
+                        "program": p,
+                        "start": p_start,
+                        "end": p_end,
+                        "duration": duration,
+                        "elapsed": elapsed,
+                        "remaining": remaining,
+                        "progress": progress
+                    })
+                elif p_start > current_dt and (p_start - current_dt).total_seconds() / 60 <= 60:
+                    starts_in = (p_start - current_dt).total_seconds() / 60
+                    kovetkezo_programok.append({
+                        "program": p,
+                        "start": p_start,
+                        "starts_in": starts_in
+                    })
+            except Exception:
+                pass
+                
+        if not fut_programok:
+            st.info("Jelenleg nem fut egyetlen program sem ezen az időponton. Válasz ki egy másik időpontot az Időszimulátorban a bal oldalon!")
+        else:
+            st.write("### 🟢 Éppen futó programok")
             
-        active_locations = sorted(list(grouped_running.keys()))
-        
-        # Display columns
-        cols = st.columns(min(3, len(active_locations)))
-        for idx, loc in enumerate(active_locations):
-            col_obj = cols[idx % len(cols)]
-            with col_obj:
-                loc_num = get_location_number(loc)
-                loc_title = f"{loc} (Térkép: {loc_num})" if loc_num else loc
+            # Group running programs by location
+            grouped_running = {}
+            for item in fut_programok:
+                loc = item["program"]["helyszin"]
+                if loc not in grouped_running:
+                    grouped_running[loc] = []
+                grouped_running[loc].append(item)
                 
-                st.markdown(f"""
-                <div style="background-color: #0e76bc10; border-left: 5px solid #0e76bc; padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; margin-top: 10px;">
-                    <h5 style="margin: 0; color: #0e76bc; font-weight: bold;">📍 {loc_title}</h5>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                for item in grouped_running[loc]:
-                    p = item["program"]
+            active_locations = sorted(list(grouped_running.keys()))
+            
+            # Display columns
+            cols = st.columns(min(3, len(active_locations)))
+            for idx, loc in enumerate(active_locations):
+                col_obj = cols[idx % len(cols)]
+                with col_obj:
+                    loc_num = get_location_number(loc)
+                    loc_title = f"{loc} (Térkép: {loc_num})" if loc_num else loc
                     
-                    # Check selection status for family members
-                    reszvevok = []
-                    for member in st.session_state.csaladtagok:
-                        if p["id"] in st.session_state.valasztott.get(member, []):
-                            reszvevok.append(member)
-                            
-                    card_bg = "#ffffff"
-                    border_color = "#e2e8f0"
-                    if reszvevok:
-                        card_bg = "#ecfdf5" # soft green for selected
-                        border_color = "#10b981"
-                        
                     st.markdown(f"""
-                    <div style="background-color: {card_bg}; border: 1px solid {border_color}; padding: 10px; border-radius: 6px; margin-bottom: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
-                        <div style="font-weight: bold; font-size: 0.95rem; color: #0f172a;">{p['nev']}</div>
-                        <div style="font-size: 0.8rem; color: #64748b; margin-top: 2px;">
-                            🕒 {item['start'].strftime('%H:%M')} - {item['end'].strftime('%H:%M')} ({int(item['duration'])} perc)
-                        </div>
-                        <div style="font-size: 0.8rem; color: #334155; margin-top: 4px; font-style: italic;">
-                            Lement: {int(item['elapsed'])} perc | Vissza van: {int(item['remaining'])} perc
-                        </div>
+                    <div style="background-color: #0e76bc10; border-left: 5px solid #0e76bc; padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; margin-top: 10px;">
+                        <h5 style="margin: 0; color: #0e76bc; font-weight: bold;">📍 {loc_title}</h5>
                     </div>
                     """, unsafe_allow_html=True)
                     
-                    st.progress(item["progress"])
-                    
-                    if loc_num:
-                        if st.button("🗺️ Térkép megnyitása", key=f"map_btn_{p['id']}_live", help="Helyszín megmutatása a térképen", use_container_width=True):
-                            mutasd_terkepet(p["helyszin"], loc_num[1:])
-                            
-                    if reszvevok:
-                        st.markdown(f"<div style='color: #047857; font-size: 0.75rem; margin-bottom: 12px; font-weight: 500;'>👥 Résztvevők: {', '.join(reszvevok)}</div>", unsafe_allow_html=True)
+                    for item in grouped_running[loc]:
+                        p = item["program"]
                         
-    if kovetkezo_programok:
-        st.write("---")
-        st.write("### ⏳ A következő 60 percben kezdődő programok")
-        
-        kovetkezo_programok = sorted(kovetkezo_programok, key=lambda x: x["starts_in"])
-        
-        for item in kovetkezo_programok[:8]:
-            p = item["program"]
-            loc_num = get_location_number(p["helyszin"])
-            loc_display = f"{p['helyszin']} (Térkép: {loc_num})" if loc_num else p['helyszin']
+                        # Check selection status for family members
+                        reszvevok = []
+                        for member in st.session_state.csaladtagok:
+                            if p["id"] in st.session_state.valasztott.get(member, []):
+                                reszvevok.append(member)
+                                
+                        card_bg = "#ffffff"
+                        border_color = "#e2e8f0"
+                        if reszvevok:
+                            card_bg = "#ecfdf5" # soft green for selected
+                            border_color = "#10b981"
+                            
+                        st.markdown(f"""<div style="background-color: {card_bg}; border: 1px solid {border_color}; padding: 10px; border-radius: 6px; margin-bottom: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+<div style="font-weight: bold; font-size: 0.95rem; color: #0f172a;">{p['nev']}</div>
+<div style="font-size: 0.8rem; color: #64748b; margin-top: 2px;">
+    🕒 {item['start'].strftime('%H:%M')} - {item['end'].strftime('%H:%M')} ({int(item['duration'])} perc)
+</div>
+<div style="font-size: 0.8rem; color: #334155; margin-top: 4px; font-style: italic;">
+    Lement: {int(item['elapsed'])} perc | Vissza van: {int(item['remaining'])} perc
+</div>
+</div>""", unsafe_allow_html=True)
+                        
+                        st.progress(item["progress"])
+                        
+                        if loc_num:
+                            if st.button("🗺️ Térkép megnyitása", key=f"map_btn_{p['id']}_live", help="Helyszín megmutatása a térképen", use_container_width=True):
+                                mutasd_terkepet(p["helyszin"], loc_num[1:])
+                                
+                        if reszvevok:
+                            st.markdown(f"<div style='color: #047857; font-size: 0.75rem; margin-bottom: 12px; font-weight: 500;'>👥 Résztvevők: {', '.join(reszvevok)}</div>", unsafe_allow_html=True)
+                            
+        if kovetkezo_programok:
+            st.write("---")
+            st.write("### ⏳ A következő 60 percben kezdődő programok")
             
-            reszvevok = []
-            for member in st.session_state.csaladtagok:
-                if p["id"] in st.session_state.valasztott.get(member, []):
-                    reszvevok.append(member)
-                    
-            badge_style = "background-color: #f1f5f9; color: #475569;"
-            if reszvevok:
-                badge_style = "background-color: #d1fae5; color: #065f46; font-weight: bold;"
+            kovetkezo_programok = sorted(kovetkezo_programok, key=lambda x: x["starts_in"])
+            
+            for item in kovetkezo_programok[:8]:
+                p = item["program"]
+                loc_num = get_location_number(p["helyszin"])
+                loc_display = f"{p['helyszin']} (Térkép: {loc_num})" if loc_num else p['helyszin']
                 
-            st.markdown(f"""
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background-color: #ffffff; border-radius: 6px; margin-bottom: 6px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.01);">
-                <div>
-                    <strong style="color: #0f172a; font-size: 0.9rem;">{p['nev']}</strong><br/>
-                    <span style="font-size: 0.75rem; color: #64748b;">📍 {loc_display}</span>
-                </div>
-                <div style="text-align: right;">
-                    <span style="{badge_style} padding: 3px 6px; border-radius: 12px; font-size: 0.75rem; display: inline-block;">
-                        {int(item['starts_in'])} perc múlva ({item['start'].strftime('%H:%M')})
-                    </span>
-                    {"<br/><span style='font-size: 0.7rem; color: #047857; font-weight: 500;'>👥 " + ", ".join(reszvevok) + "</span>" if reszvevok else ""}
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+                reszvevok = []
+                for member in st.session_state.csaladtagok:
+                    if p["id"] in st.session_state.valasztott.get(member, []):
+                        reszvevok.append(member)
+                        
+                badge_style = "background-color: #f1f5f9; color: #475569;"
+                if reszvevok:
+                    badge_style = "background-color: #d1fae5; color: #065f46; font-weight: bold;"
+                    
+                st.markdown(f"""<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background-color: #ffffff; border-radius: 6px; margin-bottom: 6px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.01);">
+<div>
+    <strong style="color: #0f172a; font-size: 0.9rem;">{p['nev']}</strong><br/>
+    <span style="font-size: 0.75rem; color: #64748b;">📍 {loc_display}</span>
+</div>
+<div style="text-align: right;">
+    <span style="{badge_style} padding: 3px 6px; border-radius: 12px; font-size: 0.75rem; display: inline-block;">
+        {int(item['starts_in'])} perc múlva ({item['start'].strftime('%H:%M')})
+    </span>
+    {"<br/><span style='font-size: 0.7rem; color: #047857; font-weight: 500;'>👥 " + ", ".join(reszvevok) + "</span>" if reszvevok else ""}
+</div>
+</div>""", unsafe_allow_html=True)
 
 # --- TAB 5: FESTIVAL MAP ---
 with tab_terkep:
