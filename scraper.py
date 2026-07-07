@@ -113,6 +113,41 @@ def scrape_programs():
         
     return parsed_programs
 
+def scrape_full_description(urlpath):
+    if not urlpath:
+        return "Nincs részletes leírás ehhez a programhoz."
+    slug = urlpath.lstrip('/')
+    detail_url = f"https://www.szelrozsatalalkozo.hu/programok?slug={slug}"
+    try:
+        r = requests.get(detail_url, timeout=10)
+        r.encoding = 'utf-8'
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, 'html.parser')
+            text_el = soup.find('div', class_='openContainer')
+            if text_el:
+                desc_div = text_el.find('div', class_='text')
+                if desc_div:
+                    img_opened = desc_div.find('div', class_='imageWrapperOpened')
+                    if img_opened:
+                        img_opened.decompose()
+                    
+                    full_text = desc_div.text.strip()
+                    full_text = re.sub(r'\s+', ' ', full_text)
+                    return full_text
+            
+            # Fallback 1: search inside main body
+            post_inner = soup.find('div', class_='postInner')
+            if post_inner:
+                paragraphs = post_inner.find_all('p')
+                if paragraphs:
+                    return "\n\n".join([p.text.strip() for p in paragraphs if p.text.strip()])
+                    
+            return "Nem sikerült feldolgozni a részletes leírást."
+    except Exception as e:
+        return f"Hiba a leírás betöltése közben: {e}"
+        
+    return "Nincs részletes leírás."
+
 if __name__ == "__main__":
     print("Testing scraper...")
     progs = scrape_programs()

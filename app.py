@@ -162,6 +162,93 @@ if 'custom_durations' not in st.session_state:
 
 # --- 5. HELPER FUNCTIONS ---
 
+LOCATION_NUMBERS = {
+    "Színházterem (Winkler terem - GYIK)": 1,
+    "Színházterem (Winkler terem)": 1,
+    "Borostyán terem (GYIK)": 2,
+    "Borostyán terem": 2,
+    "ODÚ": 3,
+    "Baba-mama szoba": 4,
+    "Kuckó (GYIK)": 4,
+    "Mevisz": 5,
+    "MEVISZ": 5,
+    "Wycliffe Bibliafordítók | Ébenkert": 6,
+    "Csillagpont Fesztivál": 7,
+    "Ifjúságépítők": 8,
+    "Fridays for Future": 9,
+    "Winddogs sportegyesület": 10,
+    "Diakónia MENTA": 11,
+    "NOO-EPSZTI": 12,
+    "Egyházmegyei sátor": 13,
+    "HEL-O Sátor": 14,
+    "HEL-O sátor": 14,
+    "Külügy Café": 15,
+    "Luther Kiadó": 16,
+    "Magyar Bibliatársulat Alapítvány": 17,
+    "Magyar Bibliatársulat": 17,
+    "KözösPont (ÖKI)": 18,
+    "MBH Bank Zenepavilon": 19,
+    "BIGI's | Kincses": 20,
+    "Alkotóház (Kötcse)": 21,
+    "Játékliget": 22,
+    "Ökosátor": 23,
+    "UNIverzum": 24,
+    "KÖSZI Koktélbár": 25,
+    "KÖSZI koktélbár": 25,
+    "TEKI Kávéház": 26,
+    "TEKI kávéház": 26,
+    "EHE+Melanchthon": 27,
+    "EHE + Melanchthon sátor": 27,
+    "FunFészek": 28,
+    "Kézműves sátor": 29,
+    "Kézművessátor": 29,
+    "Zajforrás": 30,
+    "MÖS": 31,
+    "Szélrózsa 30": 32,
+    "E-hangműhely sátor": 33,
+    "E-Hangműhely sátor": 33,
+    "International Tent": 34,
+    "Küldetés sátor": 35,
+    "KIE sátor": 36,
+    "KIE-sátor": 36,
+    "Aula": 37,
+    "Kiállítások (Aula és folyosó - P épület)": 37,
+    "Csendkuckó (P-118-3)": 38,
+    "Csendkuckó": 38,
+    "Csendkuckó (P-139)": 39,
+    "Fórum (P-109)": 40,
+    "Filmklub (P-109)": 40,
+    "Fórum, filmklub": 40,
+    "Személyiségvédelem": 41,
+    "Lelkigondozói sátor": 42,
+    "Szabadulószoba": 43,
+    "Szabadulószoba I.": 43,
+    "Szabadulószoba II.": 44,
+    "Szabadulószoba III.": 45,
+    "Szélrózsa Ovi": 46,
+    "Szélrózsa ovi": 46
+}
+
+def get_location_number(loc_name):
+    if not loc_name:
+        return ""
+    if loc_name in LOCATION_NUMBERS:
+        return f"#{LOCATION_NUMBERS[loc_name]}"
+    for k, v in LOCATION_NUMBERS.items():
+        if k.lower() in loc_name.lower() or loc_name.lower() in k.lower():
+            return f"#{v}"
+    return ""
+
+def save_uploaded_file(uploaded_file):
+    try:
+        import os
+        with open("uploaded_map.png", "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        return True
+    except Exception as e:
+        st.error(f"Hiba a fájl mentésekor: {e}")
+        return False
+
 def map_day_name(dt_str):
     if not dt_str:
         return "Nincs megadva nap"
@@ -322,10 +409,11 @@ with st.sidebar:
         st.rerun()
 
 # --- 8. TABS DEFINITION ---
-tab_kereso, tab_naptar, tab_csalad = st.tabs([
+tab_kereso, tab_naptar, tab_csalad, tab_terkep = st.tabs([
     "🔍 Program Kereső & Kínálat", 
     "📅 Személyes Naptárak", 
-    "👨‍👩‍👧‍👦 Családi Összesített Menetrend"
+    "👨‍👩‍👧‍👦 Családi Összesített Menetrend",
+    "🗺️ Fesztivál Térkép"
 ])
 
 # --- TAB 1: PROGRAMEXPLORER ---
@@ -340,45 +428,76 @@ with tab_kereso:
     
     utkozesek = ellenoriz_utkozeseket_reszletes(kivalasztott_tag)
     
-    # Filter columns
-    col_day, col_loc, col_tag, col_search = st.columns([1, 1, 1, 2])
+    # Filter controls
+    col_day, col_time = st.columns([1, 2])
     
     all_days = sorted(list(set(p["idopont"].split(" ")[0] for p in st.session_state.programok if p.get("idopont"))))
     day_options = ["Mind"] + all_days
     day_labels = {d: map_day_name(d + " 00:00") for d in all_days}
-    day_labels["Mind"] = "Mindegyik nap"
+    day_labels["Mind"] = "Összes nap"
     
     all_locations = sorted(list(set(p["helyszin"] for p in st.session_state.programok if p.get("helyszin"))))
-    loc_options = ["Mind"] + all_locations
     
     all_tags = set()
     for p in st.session_state.programok:
         all_tags.update(p.get("cimkek", []))
-    tag_options = ["Mind"] + sorted(list(all_tags))
+    hashtag_options = [f"#{t}" for t in sorted(list(all_tags))]
     
     with col_day:
-        selected_day = st.selectbox("Fesztiválnap:", day_options, format_func=lambda x: day_labels.get(x, x))
+        selected_day = st.selectbox("📅 Fesztiválnap:", day_options, format_func=lambda x: day_labels.get(x, x))
+    with col_time:
+        selected_hours = st.slider(
+            "🕒 Idősáv (kezdési óra):",
+            min_value=0,
+            max_value=24,
+            value=(0, 24),
+            step=1,
+            help="Csak az ebben a tartományban kezdődő programok jelennek meg."
+        )
+
+    col_loc, col_tag, col_search = st.columns([1, 1, 2])
     with col_loc:
-        selected_location = st.selectbox("Helyszín:", loc_options)
+        selected_locations = st.multiselect("📍 Helyszínek:", all_locations, placeholder="Összes helyszín")
     with col_tag:
-        selected_tag = st.selectbox("Kategória/Címke:", tag_options)
+        selected_hashtags = st.multiselect("🏷️ Hashtagek:", hashtag_options, placeholder="Összes hashtag")
     with col_search:
-        search_query = st.text_input("Keresés névben vagy leírásban:", placeholder="Keresett szó...")
+        search_query = st.text_input("🔍 Keresés névben vagy leírásban:", placeholder="Keresett kifejezés...")
 
     # Filtering data
     szurt_programok = []
     for p in st.session_state.programok:
+        # Day filter
         if selected_day != "Mind" and (not p["idopont"] or not p["idopont"].startswith(selected_day)):
             continue
-        if selected_location != "Mind" and p["helyszin"] != selected_location:
+            
+        # Time filter (by hour of start time)
+        if p["idopont"]:
+            try:
+                time_part = p["idopont"].split(" ")[1] # "15:30"
+                hour = int(time_part.split(":")[0])
+                if not (selected_hours[0] <= hour < selected_hours[1]):
+                    continue
+            except Exception:
+                pass
+                
+        # Location filter
+        if selected_locations and p["helyszin"] not in selected_locations:
             continue
-        if selected_tag != "Mind" and selected_tag not in p.get("cimkek", []):
-            continue
+            
+        # Tag/Hashtag filter
+        if selected_hashtags:
+            # Strip '#' from selected hashtags for comparison
+            requested_tags = [t[1:] for t in selected_hashtags]
+            if not any(t in p.get("cimkek", []) for t in requested_tags):
+                continue
+                
+        # Search query filter
         if search_query:
             query = search_query.lower()
             text_pool = f"{p['nev']} {p['leiras']} {' '.join(p.get('cimkek', []))}".lower()
             if query not in text_pool:
                 continue
+                
         szurt_programok.append(p)
         
     st.write(f"Találatok száma: **{len(szurt_programok)}** program")
@@ -401,11 +520,13 @@ with tab_kereso:
                 # Badges row
                 day_name = map_day_name(p["idopont"])
                 time_only = p["idopont"][-5:] if p["idopont"] else "Időpont nélkül"
+                loc_num = get_location_number(p["helyszin"])
+                loc_display = f"{p['helyszin']} (Térkép: {loc_num})" if loc_num else p['helyszin']
                 
                 badges_html = f"""
                 <div class="badge-container">
                     <span class="badge badge-time">🕒 {day_name} {time_only}</span>
-                    <span class="badge badge-location">📍 {p['helyszin']}</span>
+                    <span class="badge badge-location">📍 {loc_display}</span>
                     <span class="badge badge-duration">⏱️ {duration} perc</span>
                 """
                 for tag in p.get("cimkek", []):
@@ -417,7 +538,15 @@ with tab_kereso:
                 # Expandable description
                 if p["leiras"]:
                     with st.expander("Részletes leírás megtekintése"):
-                        st.write(p["leiras"])
+                        full_desc_key = f"full_desc_{p_id}"
+                        if full_desc_key not in st.session_state:
+                            with st.spinner("Részletes leírás betöltése..."):
+                                full_desc = scraper.scrape_full_description(p.get("urlpath", ""))
+                                if not full_desc or "Hiba" in full_desc or "Nem sikerült" in full_desc:
+                                    full_desc = p["leiras"]
+                                st.session_state[full_desc_key] = full_desc
+                        
+                        st.write(st.session_state[full_desc_key])
                 
                 # Show conflict warning in red box
                 if van_utkozes:
@@ -505,16 +634,27 @@ with tab_naptar:
                 with col_cinfo:
                     st.markdown(f'<div class="program-title">{p["nev"]}</div>', unsafe_allow_html=True)
                     
+                    loc_num = get_location_number(p["helyszin"])
+                    loc_display = f"{p['helyszin']} (Térkép: {loc_num})" if loc_num else p['helyszin']
+                    
                     badges_html = f"""
                     <div class="badge-container">
                         <span class="badge badge-time">🕒 {idopont_megjeleno}</span>
-                        <span class="badge badge-location">📍 {p['helyszin']}</span>
+                        <span class="badge badge-location">📍 {loc_display}</span>
                     </div>
                     """
                     st.markdown(badges_html, unsafe_allow_html=True)
                     
                     if p["leiras"]:
-                        st.caption(p["leiras"][:180] + ("..." if len(p["leiras"]) > 180 else ""))
+                        with st.expander("Részletes leírás megtekintése"):
+                            full_desc_key = f"full_desc_{p_id}"
+                            if full_desc_key not in st.session_state:
+                                with st.spinner("Részletes leírás betöltése..."):
+                                    full_desc = scraper.scrape_full_description(p.get("urlpath", ""))
+                                    if not full_desc or "Hiba" in full_desc or "Nem sikerült" in full_desc:
+                                        full_desc = p["leiras"]
+                                    st.session_state[full_desc_key] = full_desc
+                            st.write(st.session_state[full_desc_key])
                     
                     if van_utkozes:
                         st.error(f"⚠️ **Ütközés a következő naptárbejegyzésekkel:**  \n" + "  \n".join([f"- {u}" for u in utkozesek[p_id]]))
@@ -578,23 +718,65 @@ with tab_csalad:
                 members = data["members"]
                 
                 is_together = set(members) == set(st.session_state.csaladtagok)
+                loc_num = get_location_number(p["helyszin"])
+                loc_display = f"{p['helyszin']} (Térkép: {loc_num})" if loc_num else p['helyszin']
                 
                 if is_together:
                     # Highlight joint family program
                     st.markdown(f"""
                     <div class="family-together-card">
                         <strong>👨‍👩‍👧‍👦 KÖZÖS CSALÁDI PROGRAM: {p['nev']}</strong><br/>
-                        📍 <em>Helyszín: {p['helyszin']}</em><br/>
+                        📍 <em>Helyszín: {loc_display}</em><br/>
                         👥 Résztvevők: {", ".join(members)}
                     </div>
                     """, unsafe_allow_html=True)
                 else:
                     with st.container():
                         col_card_info, col_card_members = st.columns([3, 1])
-                        with col_card_info:
-                            st.markdown(f'<div class="program-title">{p["nev"]}</div>', unsafe_allow_html=True)
-                            st.caption(f"📍 {p['helyszin']} | 🏷️ {', '.join(p.get('cimkek', []))}")
-                        with col_card_members:
-                            st.markdown("**Résztvevők:**")
-                            for m in members:
-                                st.markdown(f"- 👤 {m}")
+           # --- TAB 4: FESTIVAL MAP ---
+with tab_terkep:
+    st.subheader("🗺️ Fesztivál Térkép & Helyszín Kódok")
+    st.write("A 2026-os soproni Szélrózsa találkozó hivatalos helyszínrajza:")
+    
+    # Display map parts
+    import os
+    if os.path.exists("map_part1.jpg") and os.path.exists("map_part2.jpg") and os.path.exists("map_part3.jpg"):
+        st.write("A térkép 3 része (görgess le a teljes megtekintéshez):")
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.image("map_part1.jpg", caption="1. rész: Helyszínlista és P épület", use_container_width=True)
+        with col2:
+            st.image("map_part2.jpg", caption="2. rész: Erzsébet-kert (Középső terület)", use_container_width=True)
+        with col3:
+            st.image("map_part3.jpg", caption="3. rész: GYIK & Bánfalvi út", use_container_width=True)
+    elif os.path.exists("uploaded_map.png"):
+        st.image("uploaded_map.png", caption="Feltöltött Szélrósa Helyszínrajz", use_container_width=True)
+    else:
+        st.info("Még nincs térkép kép elhelyezve a projektben.")
+        
+    # Option to upload custom map screenshot
+    with st.expander("Saját térkép kép feltöltése/cseréje"):
+        uploaded_file = st.file_uploader("Válassz egy képernyőképet (PNG, JPG, JPEG):", type=["png", "jpg", "jpeg"])
+        if uploaded_file is not None:
+            if save_uploaded_file(uploaded_file):
+                st.success("Térkép sikeresen feltöltve és mentve! Az app frissülni fog.")
+                st.rerun()
+
+    # Table of location numbers
+    st.write("---")
+    st.subheader("📍 Helyszínek és Térkép Számok")
+    st.write("A programoknál megjelenő kódok az alábbi hivatalos térkép-számok alapján segítik a tájékozódást:")
+    
+    loc_table_data = []
+    seen = set()
+    for loc_name, num in sorted(LOCATION_NUMBERS.items(), key=lambda item: item[1]):
+        if (loc_name, num) not in seen:
+            loc_table_data.append({
+                "Térkép Szám": f"#{num}",
+                "Helyszín megnevezése": loc_name
+            })
+            seen.add((loc_name, num))
+            
+    df_loc = pd.DataFrame(loc_table_data)
+    st.dataframe(df_loc, use_container_width=True, hide_index=True)
