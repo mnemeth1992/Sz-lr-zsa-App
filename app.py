@@ -314,6 +314,43 @@ def map_day_name(dt_str):
     except Exception:
         return dt_str
 
+# Dialog compatibility layer for mapping helper
+if hasattr(st, "dialog"):
+    @st.dialog("📍 Helyszín Kereső")
+    def mutasd_terkepet(helyszin, szam):
+        render_map_modal_content(helyszin, szam)
+else:
+    def mutasd_terkepet(helyszin, szam):
+        with st.expander(f"🗺️ Helyszín Kereső: {helyszin} (#{szam})", expanded=True):
+            render_map_modal_content(helyszin, szam)
+
+def render_map_modal_content(helyszin, szam):
+    st.markdown(f"### 📍 Helyszín: {helyszin} (Szám: **#{szam}**)")
+    
+    part_img = None
+    part_name = ""
+    try:
+        num_int = int(szam)
+        if 31 <= num_int <= 46:
+            part_img = "map_part1.jpg"
+            part_name = "1. rész (Baloldal: Helyszínlista és P épület)"
+        elif 18 <= num_int <= 30:
+            part_img = "map_part2.jpg"
+            part_name = "2. rész (Középső terület: Erzsébet-kert)"
+        elif 1 <= num_int <= 17:
+            part_img = "map_part3.jpg"
+            part_name = "3. rész (Jobboldal: GYIK & Bánfalvi út)"
+    except Exception:
+        pass
+        
+    import os
+    if part_img and os.path.exists(os.path.join(ROOT_PATH, part_img)):
+        st.image(os.path.join(ROOT_PATH, part_img), caption=part_name, use_container_width=True)
+    elif os.path.exists(os.path.join(ROOT_PATH, "full_map.jpg")):
+        st.image(os.path.join(ROOT_PATH, "full_map.jpg"), caption="Egyesített térkép", use_container_width=True)
+    else:
+        st.warning("Térkép kép nem érhető el.")
+
 def ellenoriz_utkozeseket_reszletes(tag):
     valasztott_ids = st.session_state.valasztott.get(tag, [])
     if not valasztott_ids:
@@ -579,7 +616,7 @@ with tab_kereso:
                 day_name = map_day_name(p["idopont"])
                 time_only = p["idopont"][-5:] if p["idopont"] else "Időpont nélkül"
                 loc_num = get_location_number(p["helyszin"])
-                loc_display = f"{p['helyszin']} (Térkép: {loc_num})" if loc_num else p['helyszin']
+                loc_display = f"{p['helyszin']} ({loc_num})" if loc_num else p['helyszin']
                 
                 badges_html = f"""
                 <div class="badge-container">
@@ -591,7 +628,13 @@ with tab_kereso:
                     badges_html += f'<span class="badge badge-tag">#{tag}</span>'
                 badges_html += "</div>"
                 
-                st.markdown(badges_html, unsafe_allow_html=True)
+                col_badges, col_map = st.columns([5, 1])
+                with col_badges:
+                    st.markdown(badges_html, unsafe_allow_html=True)
+                with col_map:
+                    if loc_num:
+                        if st.button("🗺️ Mutasd", key=f"map_btn_{p_id}_{kivalasztott_tag}_search", help="Helyszín megmutatása a térképen", use_container_width=True):
+                            mutasd_terkepet(p["helyszin"], loc_num[1:])
                 
                 # Expandable description
                 if p["leiras"]:
@@ -700,7 +743,7 @@ with tab_naptar:
                     st.markdown(f'<div class="program-title">{p["nev"]}</div>', unsafe_allow_html=True)
                     
                     loc_num = get_location_number(p["helyszin"])
-                    loc_display = f"{p['helyszin']} (Térkép: {loc_num})" if loc_num else p['helyszin']
+                    loc_display = f"{p['helyszin']} ({loc_num})" if loc_num else p['helyszin']
                     
                     badges_html = f"""
                     <div class="badge-container">
@@ -708,7 +751,14 @@ with tab_naptar:
                         <span class="badge badge-location">📍 {loc_display}</span>
                     </div>
                     """
-                    st.markdown(badges_html, unsafe_allow_html=True)
+                    
+                    col_cbadges, col_cmap = st.columns([5, 1])
+                    with col_cbadges:
+                        st.markdown(badges_html, unsafe_allow_html=True)
+                    with col_cmap:
+                        if loc_num:
+                            if st.button("🗺️ Mutasd", key=f"map_btn_{p_id}_{naptar_tag}_cal", help="Helyszín megmutatása a térképen", use_container_width=True):
+                                mutasd_terkepet(p["helyszin"], loc_num[1:])
                     
                     if p["leiras"]:
                         with st.expander("Részletes leírás megtekintése"):
@@ -793,20 +843,33 @@ with tab_csalad:
                 loc_display = f"{p['helyszin']} (Térkép: {loc_num})" if loc_num else p['helyszin']
                 
                 if is_together:
-                    # Highlight joint family program
-                    st.markdown(f"""
-                    <div class="family-together-card">
-                        <strong>👨‍👩‍👧‍👦 KÖZÖS CSALÁDI PROGRAM: {p['nev']}</strong><br/>
-                        📍 <em>Helyszín: {loc_display}</em><br/>
-                        👥 Résztvevők: {", ".join(members)}
-                    </div>
-                    """, unsafe_allow_html=True)
+                    col_tg_card, col_tg_map = st.columns([5, 1])
+                    with col_tg_card:
+                        st.markdown(f"""
+                        <div class="family-together-card">
+                            <strong>👨‍👩‍👧‍👦 KÖZÖS CSALÁDI PROGRAM: {p['nev']}</strong><br/>
+                            📍 <em>Helyszín: {loc_display}</em><br/>
+                            👥 Résztvevők: {", ".join(members)}
+                        </div>
+                        """, unsafe_allow_html=True)
+                    with col_tg_map:
+                        st.write("") # spacing
+                        if loc_num:
+                            if st.button("🗺️", key=f"map_btn_{p_id}_tg_timeline", help="Helyszín megmutatása a térképen", use_container_width=True):
+                                mutasd_terkepet(p["helyszin"], loc_num[1:])
                 else:
                     with st.container():
                         col_card_info, col_card_members = st.columns([3, 1])
                         with col_card_info:
                             st.markdown(f'<div class="program-title">{p["nev"]}</div>', unsafe_allow_html=True)
-                            st.caption(f"📍 {loc_display} | 🏷️ {', '.join(p.get('cimkek', []))}")
+                            
+                            col_cap, col_tmap = st.columns([5, 1])
+                            with col_cap:
+                                st.caption(f"📍 {loc_display} | 🏷️ {', '.join(p.get('cimkek', []))}")
+                            with col_tmap:
+                                if loc_num:
+                                    if st.button("🗺️", key=f"map_btn_{p_id}_timeline", help="Helyszín megmutatása a térképen", use_container_width=True):
+                                        mutasd_terkepet(p["helyszin"], loc_num[1:])
                         with col_card_members:
                             st.markdown("**Résztvevők:**")
                             for m in members:
@@ -911,6 +974,10 @@ with tab_elo:
                     
                     st.progress(item["progress"])
                     
+                    if loc_num:
+                        if st.button("🗺️ Térkép megnyitása", key=f"map_btn_{p['id']}_live", help="Helyszín megmutatása a térképen", use_container_width=True):
+                            mutasd_terkepet(p["helyszin"], loc_num[1:])
+                            
                     if reszvevok:
                         st.markdown(f"<div style='color: #047857; font-size: 0.75rem; margin-bottom: 12px; font-weight: 500;'>👥 Résztvevők: {', '.join(reszvevok)}</div>", unsafe_allow_html=True)
                         
