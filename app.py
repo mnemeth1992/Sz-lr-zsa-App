@@ -129,7 +129,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- 3. SCRAPER DATA LOAD & CACHING ---
-@st.cache_data(show_spinner="Adatok szinkronizálása a Szélrózsa honlapjáról...", ttl=3600)
+@st.cache_data(show_spinner="Adatok szinkronizálása a Szélrózsa honlapjáról...")
 def get_scraped_programs():
     return scraper.scrape_programs()
 
