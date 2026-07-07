@@ -133,6 +133,7 @@ import os
 ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 PROGRAMS_FILE = os.path.join(ROOT_PATH, "programs_database.json")
 
+@st.cache_data(show_spinner="Programadatbázis betöltése...")
 def get_scraped_programs():
     import json
     if os.path.exists(PROGRAMS_FILE):
@@ -153,7 +154,7 @@ def get_scraped_programs():
 
 # Force clear cache action helper
 if 'clear_cache' in st.session_state and st.session_state.clear_cache:
-    st.cache_data.clear()
+    get_scraped_programs.clear()
     st.session_state.clear_cache = False
 
 # --- 4. SESSION STATE INITIALIZATION ---
